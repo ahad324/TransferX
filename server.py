@@ -118,7 +118,7 @@ logger = logging.getLogger('server')
 logger.setLevel(logging.INFO)
 
 # Create a file handler
-file_handler = logging.FileHandler('server.log')
+file_handler = logging.FileHandler('server.log',encoding='utf-8')
 file_handler.setLevel(logging.INFO)
 
 # Create a console handler
@@ -176,6 +176,7 @@ def log_file_to_db(filename, file_size, saved_path):
 def handle_client(client_socket, log_text, addr):
     """Handles communication with a client."""
     global file_count_var, data_received_var
+
     try:
         def receive_until_delimiter(delimiter):
             """Receives data until the specified delimiter is found."""
@@ -187,25 +188,28 @@ def handle_client(client_socket, log_text, addr):
                 data += chunk
             return data.decode()
 
+        # Receive header data
         header_data = receive_until_delimiter(DELIMITER)
         if not header_data:
-            logger.error("Header data not received correctly.")
-            log_text.insert(tk.END, "Header data not received correctly.\n")
+            logger.error("❌ Header data not received correctly.")
+            log_text.insert(tk.END, "❌ Header data not received correctly.\n")
             client_socket.sendall(b'error')  # Send error response
             return
         
+        # Process metadata
         metadata = json.loads(header_data.split('\n', 1)[0])
         filename = metadata["filename"]
         file_size = metadata["file_size"]
 
-        logger.info(f"Received filename: {filename}")
-        logger.info(f"Expected file size: {file_size} bytes")
-        log_text.insert(tk.END, f"Received filename: {filename}\n")
-        log_text.insert(tk.END, f"Expected file size: {file_size} bytes\n")
+        logger.info(f"📁 Received filename: {filename}")
+        logger.info(f"📏 Expected file size: {file_size} bytes")
+        log_text.insert(tk.END, f"📁 Received filename: {filename}\n")
+        log_text.insert(tk.END, f"📏 Expected file size: {file_size} bytes\n")
 
+        # Save file
         file_path = os.path.join(BUCKET_DIR, filename)
-        logger.info(f"Saving file to: {file_path}")
-        log_text.insert(tk.END, f"Saving file to: {file_path}\n")
+        logger.info(f"💾 Saving file to: {file_path}")
+        log_text.insert(tk.END, f"💾 Saving file to: {file_path}\n")
 
         bytes_received = 0
         with open(file_path, 'wb') as f:
@@ -217,30 +221,49 @@ def handle_client(client_socket, log_text, addr):
                 bytes_received += len(chunk)
                 data_received_var.set(data_received_var.get() + len(chunk))
 
+        # Check if the file transfer was successful
         if bytes_received == file_size:
-            logger.info(f"File received successfully: {filename}")
-            log_text.insert(tk.END, f"File received successfully: {filename}\n")
+            logger.info(f"✅ File received successfully: {filename}")
+            log_text.insert(tk.END, f"✅ File received successfully: {filename}\n")
             file_count_var.set(file_count_var.get() + 1)
             log_file_to_db(filename, file_size, file_path)
             client_socket.sendall(b'success')  # Send success response
         else:
-            logger.error(f"File transfer incomplete: {filename}")
-            log_text.insert(tk.END, f"File transfer incomplete: {filename}\n")
+            logger.error(f"⚠️ File transfer incomplete: {filename}")
+            log_text.insert(tk.END, f"⚠️ File transfer incomplete: {filename}\n")
             client_socket.sendall(b'error')  # Send error response
 
     except Exception as e:
-        logger.error(f"Error handling client: {e}")
-        log_text.insert(tk.END, f"Error handling client: {e}\n")
+        logger.error(f"❗ Error handling client: {e}")
+        log_text.insert(tk.END, f"❗ Error handling client: {e}\n")
         client_socket.sendall(b'error')  # Send error response
     finally:
         client_socket.close()
         connections.remove(client_socket)
         connection_count_var.set(len(connections))
 
+def log_session_summary():
+    """Logs the summary of the server session with emojis and clear formatting."""
+    summary = (
+        f"\n🔄 <==================== Session Summary ====================> 🔄\n"
+        f"📁 Files Processed: {file_count_var.get()}\n"
+        f"📊 Data Received: {data_received_var.get()} bytes\n"
+        f"📦 Chunk Size: {chunk_size_var.get()} bytes\n"
+        f"🔚 <=========================================================> 🔚\n"
+    )
+    logger.info(summary)
+    log_text.insert(tk.END, summary)
+    log_text.yview(tk.END)
+
 def log_separator(context):
-    """Logs a separator for better navigation within the log file."""
-    separator = f"<===================== {context} ===========================>"
+    """Logs a separator for better navigation within the log file with emojis."""
+    separator = (
+        f"\n🟡 <===================== {context} =======================> 🟡\n"
+    )
     logger.info(separator)
+    log_text.insert(tk.END, separator)
+    log_text.yview(tk.END)
+
     
 def start_server():
     """Starts the server."""
@@ -250,12 +273,12 @@ def start_server():
         port = server_port_var.get()
 
         if not is_valid_ip(ip) or not is_valid_port(port):
-            messagebox.showerror("Invalid Configuration", "Please enter a valid IP address and port.")
+            messagebox.showerror("❌ Invalid Configuration", "Please enter a valid IP address and port.")
             return
 
         chunk_size = chunk_size_var.get()
         if not is_valid_chunk_size(chunk_size):
-            messagebox.showerror("Invalid Configuration", "Please enter a valid chunk size.")
+            messagebox.showerror("❌ Invalid Configuration", "Please enter a valid chunk size.")
             return
 
         try:
@@ -270,14 +293,20 @@ def start_server():
             restart_button.config(state=tk.NORMAL)
 
             Thread(target=accept_connections, daemon=True).start()
-            logger.info(f"Server started on {ip}:{port}")
-            log_text.insert(tk.END, f"Server started on {ip}:{port}\n")
-        except Exception as e:
-            logger.error(f"Failed to start server: {e}")
-            log_text.insert(tk.END, f"Failed to start server: {e}\n")
+            logger.info(f"✅ Server started on {ip}:{port}")
+            log_text.insert(tk.END, f"🚀 Server started on {ip}:{port}\n")
+        except socket.error as e:
+            if e.errno == 10048:
+                logger.error(f"⚠️ Port {port} is already in use.")
+                log_text.insert(tk.END, f"⚠️ Port {port} is already in use.\n")
+                messagebox.showerror("⚠️ Port Error", f"Port {port} is already in use.")
+            else:
+                logger.error(f"❌ Failed to start server: {e}")
+                log_text.insert(tk.END, f"❌ Failed to start server: {e}\n")
     else:
-        logger.warning("Server is already running.")
-        log_text.insert(tk.END, "Server is already running.\n")
+        logger.warning("⚠️ Server is already running.")
+        log_text.insert(tk.END, "⚠️ Server is already running.\n")
+
 
 def accept_connections():
     """Accepts incoming client connections."""
@@ -286,45 +315,64 @@ def accept_connections():
             client_socket, addr = server_socket.accept()
             connections.append(client_socket)
             connection_count_var.set(len(connections))
-            logger.info(f"Accepted connection from {addr}")
-            log_text.insert(tk.END, f"Accepted connection from {addr}\n")
+            logger.info(f"🔗 Accepted connection from {addr}")
+            log_text.insert(tk.END, f"🔗 Accepted connection from {addr}\n")
             Thread(target=handle_client, args=(client_socket, log_text, addr), daemon=True).start()
         except Exception as e:
             if not stop_event.is_set():
-                logger.error(f"Error accepting connections: {e}")
-                log_text.insert(tk.END, f"Error accepting connections: {e}\n")
+                logger.error(f"❌ Error accepting connections: {e}")
+                log_text.insert(tk.END, f"❌ Error accepting connections: {e}\n")
             break
+
 
 def stop_server():
     """Stops the server."""
-    global server_running, stop_event
+    global server_running, stop_event, server_socket
+
     if not server_running:
-        messagebox.showwarning("Server not running", "The server is not currently running.")
+        messagebox.showwarning("⚠️ Server not running", "The server is not currently running.")
         return
 
-    stop_event.set()
     server_running = False
+    stop_event.set()
+
     for conn in connections:
         conn.close()
     connections.clear()
+
     connection_count_var.set(0)
+
     stop_button.config(state=tk.DISABLED)
     start_button.config(state=tk.NORMAL)
     restart_button.config(state=tk.DISABLED)
-    
-    logger.info(f"\n{'='*20} SESSION END {'='*20}\n")
-    log_text.insert(tk.END, f"\n{'='*20} SESSION END {'='*20}\n")
-    
-    logger.info("Server stopped successfully.")
-    log_text.insert(tk.END, "Server stopped successfully.\n")
+
+    root.after(500, check_server_stopped)
+
+
+def check_server_stopped():
+    """Checks if the server has fully stopped and updates the UI."""
+    global server_socket
+
+    try:
+        if server_socket:
+            server_socket.close()
+            server_socket = None
+        logger.info("🛑 Server stopped successfully.")
+        log_text.insert(tk.END, "🛑 Server stopped successfully.\n")
+        log_session_summary()
+    except Exception as e:
+        logger.error(f"❌ Error stopping the server: {e}")
+        log_text.insert(tk.END, f"❌ Error stopping the server: {e}\n")
+
 
 def restart_server():
     """Restarts the server."""
     log_separator("Server Restart")
-    log_text.insert(tk.END, "Restarting the server...\n")
+    log_text.insert(tk.END, "🔄 Restarting the server...\n")
     log_text.yview(tk.END)
     stop_server()
-    start_server()
+    root.after(1000, start_server)
+
 
 def clear_logs():
     """Clears the log display."""
@@ -333,11 +381,9 @@ def clear_logs():
 def on_closing():
     """Handles the window close event."""
     if server_running:
-        if messagebox.askokcancel("Quit", "The server is still running. Do you want to stop the server and exit?"):
-            stop_server()  # Stop the server before closing the application
-            root.destroy()
+        messagebox.showinfo("Quit", "The server is still running. Please stop it first.")
     else:
-        root.destroy()
+        root.destroy()  # Close the window if the server is not running
         
 def apply_settings():
     """Applies settings changes."""

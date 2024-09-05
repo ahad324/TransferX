@@ -3,8 +3,7 @@ import os
 import json
 import zipfile
 import time
-from tkinter import Tk, Button, filedialog, messagebox, Label, Entry, StringVar, ttk, Toplevel
-from tkinter.colorchooser import askcolor
+from tkinter import Button, filedialog, messagebox, Label, Entry, StringVar, ttk, Toplevel
 from threading import Thread
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
@@ -16,14 +15,14 @@ DELIMITER = "---END-HEADER---"
 FONT = 'Segoe UI'
 
 # Define colors
-BUTTON_COLOR_LIGHT = '#4A90E2'
-BUTTON_COLOR_DARK = '#0033A0'
-BG_COLOR_LIGHT = '#F4F4F4'
-BG_COLOR_DARK = '#2C2C2C'
-ENTRY_BG_COLOR = '#E0E0E0'
-ENTRY_FG_COLOR = '#000000'
-PROGRESSBAR_COLOR = '#4A90E2'
-BUTTON_HOVER_COLOR = '#357ABD'
+BUTTON_COLOR_LIGHT = '#007BFF'
+BUTTON_COLOR_DARK = '#0056b3'
+BG_COLOR_LIGHT = '#F0F2F5'
+BG_COLOR_DARK = '#343A40'
+ENTRY_BG_COLOR = '#FFFFFF'
+ENTRY_FG_COLOR = '#212529'
+PROGRESSBAR_COLOR = '#28A745'
+BUTTON_HOVER_COLOR = '#0056b3'
 
 # Initialize the root window
 root = TkinterDnD.Tk()
@@ -217,16 +216,20 @@ def submit_file(file_path, roll_no):
                         data = f.read(int(chunk_size_var.get()))
                         if not data:
                             break
-                        s.sendall(data)
-                        total_sent += len(data)
-                        elapsed_time = time.time() - start_time
-                        speed = total_sent / elapsed_time if elapsed_time > 0 else 0
-                        estimated_time = (file_size - total_sent) / speed if speed > 0 else 0
-                        progress['value'] = total_sent
-                        progress_label['text'] = f"{int((total_sent / file_size) * 100)}%"
-                        speed_label['text'] = f"Speed: {speed / 1024:.2f} KB/s"
-                        time_label['text'] = f"Time Left: {estimated_time // 60:.0f}m {estimated_time % 60:.0f}s"
-                        root.update_idletasks()
+                        try:
+                            s.sendall(data)
+                            total_sent += len(data)
+                            elapsed_time = time.time() - start_time
+                            speed = total_sent / elapsed_time if elapsed_time > 0 else 0
+                            estimated_time = (file_size - total_sent) / speed if speed > 0 else 0
+                            progress['value'] = total_sent
+                            progress_label['text'] = f"{int((total_sent / file_size) * 100)}%"
+                            speed_label['text'] = f"Speed: {speed / 1024:.2f} KB/s"
+                            time_label['text'] = f"Time Left: {estimated_time // 60:.0f}m {estimated_time % 60:.0f}s"
+                            root.update_idletasks()
+                        except ConnectionResetError:
+                            messagebox.showerror("Connection Error", "The connection to the server was lost. Please try again.")
+                            return
 
                 s.shutdown(socket.SHUT_WR)
                 response = s.recv(1024).decode()
