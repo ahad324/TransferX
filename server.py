@@ -196,8 +196,8 @@ def handle_client(client_socket, log_text, addr):
         # Receive header data
         header_data = receive_until_delimiter(DELIMITER)
         if not header_data:
-            logger.error("❌ Header data not received correctly.")
-            log_text.insert(tk.END, "❌ Header data not received correctly.\n")
+            logger.error(f"{'❌' * 10} Header data not received correctly.")
+            log_text.insert(tk.END, f"{'❌' * 10} Header data not received correctly.\n")
             client_socket.sendall(b'error')  # Send error response
             return
         
@@ -234,29 +234,29 @@ def handle_client(client_socket, log_text, addr):
             log_file_to_db(filename, file_size, file_path)
             client_socket.sendall(b'ok')  # Send success response
         else:
-            logger.error(f"⚠️ File transfer incomplete: {filename}")
-            log_text.insert(tk.END, f"⚠️ File transfer incomplete: {filename}\n")
+            logger.error(f"{'⚠️' * 5} File transfer incomplete: {filename}")
+            log_text.insert(tk.END, f"{'⚠️' * 5} File transfer incomplete: {filename}\n")
             client_socket.sendall(b'error')  # Send error response
 
     except Exception as e:
-        logger.error(f"❗ Error handling client: {e}")
-        log_text.insert(tk.END, f"❗ Error handling client: {e}\n")
+        logger.error(f"{'❗' * 5} Error handling client: {e}")
+        log_text.insert(tk.END, f"{'❗' * 5} Error handling client: {e}\n")
         client_socket.sendall(b'error')  # Send error response
     finally:
         client_socket.close()
         connections.remove(client_socket)
-        logger.info(f"✅ Connection with {addr} is clossed!\n")
-        log_text.insert(tk.END, f"✅ Connection with {addr} is clossed!\n")
+        logger.info(f"{'✅' * 5} Connection with {addr} is clossed!\n")
+        log_text.insert(tk.END, f"{'✅' * 5} Connection with {addr} is clossed!\n")
         connection_count_var.set(len(connections))
 
 def log_session_summary():
     """Logs the summary of the server session with emojis and clear formatting."""
     summary = (
-        f"\n🔄 <==================== Session Summary ====================> 🔄\n"
+        f"🔄 <{'-' * 20} Session Summary {'-' * 20}> 🔄\n"
         f"📁 Files Processed: {file_count_var.get()}\n"
         f"📊 Data Received: {data_received_var.get()} bytes\n"
         f"📦 Chunk Size: {chunk_size_var.get()} bytes\n"
-        f"🔚 <=========================================================> 🔚\n"
+        f"🔚 <{'=' * 80}> 🔚\n"
     )
     logger.info(summary)
     log_text.insert(tk.END, summary)
@@ -265,7 +265,7 @@ def log_session_summary():
 def log_separator(context):
     """Logs a separator for better navigation within the log file with emojis."""
     separator = (
-        f"\n🟡 <===================== {context} =======================> 🟡\n"
+        f"\n🟡 <{'-' * 25} {context} {'-' * 25}> 🟡\n"
     )
     logger.info(separator)
     log_text.insert(tk.END, separator)
@@ -304,19 +304,20 @@ def start_server():
             restart_button.config(state=tk.NORMAL)
 
             Thread(target=accept_connections, daemon=True).start()
-            logger.info(f"✅ Server started on {ip}:{port}")
-            log_text.insert(tk.END, f"🚀 Server started on {ip}:{port}\n")
+            logger.info(f"|{'=' * 20 } 🚀 Server started on {ip}:{port} {'=' * 20 }|")
+            log_text.insert(tk.END, f"|{'=' * 20 } 🚀 Server started on {ip}:{port} {'=' * 20 }|\n")
+            
         except socket.error as e:
             if e.errno == 10048:
-                logger.error(f"⚠️ Port {port} is already in use.")
-                log_text.insert(tk.END, f"⚠️ Port {port} is already in use.\n")
+                logger.error(f"{'⚠️' * 5} Port {port} is already in use.")
+                log_text.insert(tk.END, f"{'⚠️' * 5} Port {port} is already in use.\n")
                 messagebox.showerror("⚠️ Port Error", f"Port {port} is already in use.")
             else:
                 logger.error(f"❌ Failed to start server: {e}")
-                log_text.insert(tk.END, f"❌ Failed to start server: {e}\n")
+                log_text.insert(tk.END, f"{'❌' * 5} Failed to start server: {e}\n")
     else:
-        logger.warning("⚠️ Server is already running.")
-        log_text.insert(tk.END, "⚠️ Server is already running.\n")
+        logger.warning(f"{'⚠️' * 5} Server is already running.")
+        log_text.insert(tk.END, f"{'⚠️' * 5} Server is already running.\n")
 
 
 def accept_connections():
@@ -326,13 +327,13 @@ def accept_connections():
             client_socket, addr = server_socket.accept()
             connections.append(client_socket)
             connection_count_var.set(len(connections))
-            logger.info(f"🔗 Accepted connection from {addr}")
-            log_text.insert(tk.END, f"🔗 Accepted connection from {addr}\n")
+            logger.info(f"{'=' * 5}> 🔗 Accepted connection from {addr}")
+            log_text.insert(tk.END, f"{'=' * 5}> 🔗 Accepted connection from {addr}\n")
             Thread(target=handle_client, args=(client_socket, log_text, addr), daemon=True).start()
         except Exception as e:
             if not stop_event.is_set():
-                logger.error(f"❌ Error accepting connections: {e}")
-                log_text.insert(tk.END, f"❌ Error accepting connections: {e}\n")
+                logger.error(f"{'❌' * 5} Error accepting connections: {e}")
+                log_text.insert(tk.END, f"{'❌' * 5} Error accepting connections: {e}\n")
             break
 
 
@@ -368,12 +369,12 @@ def check_server_stopped():
         if server_socket:
             server_socket.close()
             server_socket = None
-        logger.info("🛑 Server stopped successfully.")
-        log_text.insert(tk.END, "🛑 Server stopped successfully.\n")
+        logger.info(f"{'🛑' * 5} Server stopped successfully.")
+        log_text.insert(tk.END, f"{'🛑' * 5} Server stopped successfully.\n")
         log_session_summary()
     except Exception as e:
-        logger.error(f"❌ Error stopping the server: {e}")
-        log_text.insert(tk.END, f"❌ Error stopping the server: {e}\n")
+        logger.error(f"{'❌' * 5} Error stopping the server: {e}")
+        log_text.insert(tk.END, f"{'❌' * 5} Error stopping the server: {e}\n")
 
 
 def restart_server():
