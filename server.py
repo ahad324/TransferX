@@ -288,6 +288,10 @@ def start_server():
             server_running = True
             stop_event.clear()
 
+            # Initialize Files Processed and Data Received
+            file_count_var.set(0)
+            data_received_var.set(0)
+            
             start_button.config(state=tk.DISABLED)
             stop_button.config(state=tk.NORMAL)
             restart_button.config(state=tk.NORMAL)
