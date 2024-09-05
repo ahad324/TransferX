@@ -18,6 +18,9 @@ DB_FILE = 'server_data.db'
 # Create the bucket storage directory if it doesn't exist
 os.makedirs(BUCKET_DIR, exist_ok=True)
 
+# Define colors
+BG_COLOR = '#2E2E2E'
+
 # Server control flags
 server_running = False
 stop_event = Event()
@@ -25,9 +28,10 @@ connections = []  # Track active connections
 
 # Initialize the Tkinter root window
 root = tk.Tk()
-root.title("Server Application")
+root.title("Server Control Panel")
 root.geometry("800x600")
 root.minsize(800, 600)
+root.configure(bg=BG_COLOR)
 
 # Tkinter variables
 connection_count_var = tk.IntVar(value=0)
@@ -45,7 +49,6 @@ notebook = ttk.Notebook(root)
 notebook.pack(pady=20, expand=True, fill="both")
 
 # Add padding to the tabs
-style = ttk.Style()
 style.configure("TNotebook.Tab", padding=[20, 10])
 
 # Create a frame for the log
@@ -99,6 +102,7 @@ apply_button.grid(row=3, column=0, columnspan=2, padx=20, pady=20)
 
 # Create and pack the button frame
 button_frame = tk.Frame(root)
+button_frame.config(bg=BG_COLOR)
 button_frame.pack(pady=20)
 
 start_button = tk.Button(button_frame, text="Start Server", command=lambda: start_server(), height=2, width=10)
@@ -227,7 +231,7 @@ def handle_client(client_socket, log_text, addr):
             log_text.insert(tk.END, f"✅ File received successfully: {filename}\n")
             file_count_var.set(file_count_var.get() + 1)
             log_file_to_db(filename, file_size, file_path)
-            client_socket.sendall(b'success')  # Send success response
+            client_socket.sendall(b'ok')  # Send success response
         else:
             logger.error(f"⚠️ File transfer incomplete: {filename}")
             log_text.insert(tk.END, f"⚠️ File transfer incomplete: {filename}\n")
@@ -240,6 +244,8 @@ def handle_client(client_socket, log_text, addr):
     finally:
         client_socket.close()
         connections.remove(client_socket)
+        logger.info(f"✅ Connection with {addr} is clossed!\n")
+        log_text.insert(tk.END, f"✅ Connection with {addr} is clossed!\n")
         connection_count_var.set(len(connections))
 
 def log_session_summary():
@@ -409,7 +415,9 @@ def apply_settings():
         return
 
     CHUNK_SIZE = chunk_size
-    restart_server()
+    if server_running:
+        restart_server()
+        
     messagebox.showinfo("Settings", "Settings updated successfully.")
 
 # Initialize the database

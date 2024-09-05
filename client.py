@@ -233,7 +233,7 @@ def submit_file(file_path, roll_no):
 
                 s.shutdown(socket.SHUT_WR)
                 response = s.recv(1024).decode()
-                if response == 'success':
+                if response == 'ok':
                     messagebox.showinfo("Success", "File uploaded successfully!")
                 else:
                     messagebox.showerror("Error", "Failed to upload file.")
