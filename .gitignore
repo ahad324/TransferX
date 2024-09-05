@@ -1,3 +1,4 @@
 bucket_storage/
+myenv/
 server.log
-myenv
+server_data.db
