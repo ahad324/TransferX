@@ -53,6 +53,7 @@ style.configure("TNotebook.Tab", padding=[20, 10])
 
 # Create a frame for the log
 log_frame = tk.Frame(notebook)
+log_frame.pack(fill=tk.BOTH, expand=True)
 notebook.add(log_frame, text="Logs")
 
 # Create a frame for the status
@@ -64,8 +65,8 @@ settings_frame = tk.Frame(notebook)
 notebook.add(settings_frame, text="Settings")
 
 # Create and pack the log text area
-log_text = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD, height=20, width=90)
-log_text.pack(pady=20)
+log_text = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD, height=20)
+log_text.pack(pady=20, fill=tk.BOTH, expand=True)
 
 # Create and pack the status frame
 status_frame.grid_columnconfigure(0, weight=1)
