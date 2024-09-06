@@ -3,7 +3,7 @@ import os
 import json
 from threading import Thread, Event
 import tkinter as tk
-from tkinter import scrolledtext, messagebox, ttk
+from tkinter import scrolledtext, messagebox, ttk, font
 import logging
 import sqlite3
 import re
@@ -32,10 +32,13 @@ connections = []  # Track active connections
 # Initialize the Tkinter root window
 root = tk.Tk()
 root.title("Server Control Panel")
-root.geometry("800x600")
-root.minsize(800, 600)
+root.geometry("800x630")
+root.minsize(800, 630)
+root.iconbitmap('Logos/logo2.ico')
 root.configure(bg=DARK_BG_COLOR)
 
+# Apply the font globally
+root.option_add("*Font", font.Font(family=FONT))
 # Tkinter variables
 connection_count_var = tk.IntVar(value=0)
 file_count_var = tk.IntVar(value=0)
@@ -44,7 +47,6 @@ chunk_size_var = tk.IntVar(value=CHUNK_SIZE)
 server_ip_var = tk.StringVar(value=SERVER_IP)
 server_port_var = tk.IntVar(value=SERVER_PORT)
 directory_var = tk.StringVar(value=BUCKET_DIR)
-
 
 style = ttk.Style()
 style.configure("TNotebook.Tab", padding=[20, 10])
@@ -95,27 +97,27 @@ settings_frame.grid_columnconfigure(0, weight=1)
 settings_frame.grid_columnconfigure(1, weight=2)
 
 # Server IP Label and Entry
-tk.Label(settings_frame, text="Server IP:", anchor="e", font=(FONT, 12, "bold")).grid(row=0, column=0, padx=20, pady=10, sticky="e")
-server_ip_entry = tk.Entry(settings_frame, textvariable=server_ip_var, font=(FONT, 12), width=30)
+tk.Label(settings_frame, text="Server IP:", anchor="e", font=( 12, "bold")).grid(row=0, column=0, padx=20, pady=10, sticky="e")
+server_ip_entry = tk.Entry(settings_frame, textvariable=server_ip_var, font=( 12), width=30)
 server_ip_entry.grid(row=0, column=1, padx=20, pady=10)
 
 # Port Label and Entry
-tk.Label(settings_frame, text="Port:", anchor="e", font=(FONT, 12, "bold")).grid(row=1, column=0, padx=20, pady=10, sticky="e")
-server_port_entry = tk.Entry(settings_frame, textvariable=server_port_var, font=(FONT, 12), width=30)
+tk.Label(settings_frame, text="Port:", anchor="e", font=( 12, "bold")).grid(row=1, column=0, padx=20, pady=10, sticky="e")
+server_port_entry = tk.Entry(settings_frame, textvariable=server_port_var, font=( 12), width=30)
 server_port_entry.grid(row=1, column=1, padx=20, pady=10)
 
 # Chunk Size Label and Entry
-tk.Label(settings_frame, text="Chunk Size:", anchor="e", font=(FONT, 12, "bold")).grid(row=2, column=0, padx=20, pady=10, sticky="e")
-chunk_size_entry = tk.Entry(settings_frame, textvariable=chunk_size_var, font=(FONT, 12), width=30)
+tk.Label(settings_frame, text="Chunk Size:", anchor="e", font=( 12, "bold")).grid(row=2, column=0, padx=20, pady=10, sticky="e")
+chunk_size_entry = tk.Entry(settings_frame, textvariable=chunk_size_var, font=( 12), width=30)
 chunk_size_entry.grid(row=2, column=1, padx=20, pady=10)
 
 # Storage Directory Label and Entry
-tk.Label(settings_frame, text="Storage Directory:", anchor="e", font=(FONT, 12, "bold")).grid(row=3, column=0, padx=20, pady=10, sticky="e")
-directory_entry = tk.Entry(settings_frame, textvariable=directory_var, font=(FONT, 12), width=30)
+tk.Label(settings_frame, text="Storage Directory:", anchor="e", font=( 12, "bold")).grid(row=3, column=0, padx=20, pady=10, sticky="e")
+directory_entry = tk.Entry(settings_frame, textvariable=directory_var, font=( 12), width=30)
 directory_entry.grid(row=3, column=1, padx=20, pady=10)
 
 # Apply Button
-apply_button = tk.Button(settings_frame, text="Apply", command=lambda:apply_settings(), height=2, width=10,bg="#4CAF50", fg="white", relief="raised")
+apply_button = tk.Button(settings_frame, text="Apply", command=lambda:apply_settings(), height=2, width=10,bg="#4CAF50", fg="white", relief="raised",font=(FONT,10,"bold"))
 apply_button.grid(row=4, column=0, columnspan=2, padx=20, pady=20, sticky="n")
 
 
