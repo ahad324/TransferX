@@ -180,6 +180,16 @@ def zip_files(file_paths, zip_file_path):
             zipf.write(file, os.path.basename(file))
     print(f"Created zip file: {zip_file_path}")
 
+def update_progress(progress, progress_label, speed_label, time_label, total_sent, file_size, start_time):
+    elapsed_time = time.time() - start_time
+    speed = total_sent / elapsed_time if elapsed_time > 0 else 0
+    estimated_time = (file_size - total_sent) / speed if speed > 0 else 0
+    progress['value'] = total_sent
+    progress_label['text'] = f"{int((total_sent / file_size) * 100)}%"
+    speed_label['text'] = f"Speed: {speed / 1024:.2f} KB/s"
+    time_label['text'] = f"Time Left: {estimated_time // 60:.0f}m {estimated_time % 60:.0f}s"
+    root.update_idletasks()
+    
 def submit_file(file_path, roll_no):
     try:
         dialog, progress, progress_label, speed_label, time_label = create_progress_dialog()
@@ -219,13 +229,7 @@ def submit_file(file_path, roll_no):
                         try:
                             s.sendall(data)
                             total_sent += len(data)
-                            elapsed_time = time.time() - start_time
-                            speed = total_sent / elapsed_time if elapsed_time > 0 else 0
-                            estimated_time = (file_size - total_sent) / speed if speed > 0 else 0
-                            progress['value'] = total_sent
-                            progress_label['text'] = f"{int((total_sent / file_size) * 100)}%"
-                            speed_label['text'] = f"Speed: {speed / 1024:.2f} KB/s"
-                            time_label['text'] = f"Time Left: {estimated_time // 60:.0f}m {estimated_time % 60:.0f}s"
+                            update_progress(progress, progress_label, speed_label, time_label, total_sent, file_size, start_time)
                             root.update_idletasks()
                         except ConnectionResetError:
                             messagebox.showerror("Connection Error", "The connection to the server was lost. Please try again.")
