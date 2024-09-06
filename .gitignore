@@ -1,7 +1,6 @@
 bucket_storage/
 build/
 dist/
-*.spec
 myenv/
 server.log
 server_data.db
