@@ -6,6 +6,7 @@ import time
 from tkinter import Button, filedialog, messagebox, Label, Entry, StringVar, ttk, Toplevel
 from threading import Thread
 from tkinterdnd2 import DND_FILES, TkinterDnD
+import re
 
 # Constants
 DEFAULT_SERVER_IP = '127.0.0.1'
@@ -98,7 +99,10 @@ roll_no_entry.config(bg=ENTRY_BG_COLOR, fg=ENTRY_FG_COLOR)
 instructions = Label(root, text="Drag and drop files here or click 'Select Files' to upload.\nIf multiple files are selected, they will be zipped.", font=(FONT, 18), wraplength=750, justify="center")
 instructions.pack(pady=20)
 
-# Remove drag-and-drop functionality entirely
+def sanitize_filename(filename):
+    """Sanitize the filename to avoid directory traversal attacks."""
+    return re.sub(r'[<>:"/\\|?*]', '', filename)
+
 def on_drop(event):
     file_paths = root.tk.splitlist(event.data)
     if file_paths:
@@ -114,7 +118,7 @@ def on_drop(event):
             return
 
         if len(file_paths) > 1:
-            zip_file_path = f"{roll_no}.zip"
+            zip_file_path = f"{sanitize_filename(roll_no)}.zip"
             zip_files(file_paths, zip_file_path)
             submit_file(zip_file_path, roll_no)
         else:
@@ -168,7 +172,7 @@ def select_files():
             return
 
         if len(file_paths) > 1:
-            zip_file_path = f"{roll_no}.zip"
+            zip_file_path = f"{sanitize_filename(roll_no)}.zip"
             zip_files(file_paths, zip_file_path)
             submit_file(zip_file_path, roll_no)
         else:
@@ -178,7 +182,7 @@ def zip_files(file_paths, zip_file_path):
     with zipfile.ZipFile(zip_file_path, 'w') as zipf:
         for file in file_paths:
             zipf.write(file, os.path.basename(file))
-    print(f"Created zip file: {zip_file_path}")
+    # print(f"Created zip file: {zip_file_path}")
 
 def update_progress(progress, progress_label, speed_label, time_label, total_sent, file_size, start_time):
     elapsed_time = time.time() - start_time
@@ -230,7 +234,6 @@ def submit_file(file_path, roll_no):
                             s.sendall(data)
                             total_sent += len(data)
                             update_progress(progress, progress_label, speed_label, time_label, total_sent, file_size, start_time)
-                            root.update_idletasks()
                         except ConnectionResetError:
                             messagebox.showerror("Connection Error", "The connection to the server was lost. Please try again.")
                             return

@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import scrolledtext, messagebox, ttk
 import logging
 import sqlite3
+import re
 
 # Constants
 SERVER_IP = '0.0.0.0'
@@ -136,26 +137,32 @@ restart_button.pack(side=tk.LEFT, padx=20)
 clear_button = tk.Button(button_frame, text="Clear Logs", command=lambda: clear_logs(), height=2, width=10)
 clear_button.pack(side=tk.LEFT, padx=20)
 
-# Create a logger
-logger = logging.getLogger('server')
-logger.setLevel(logging.INFO)
+def setup_logging():
+    """Sets up logging configuration."""
+    global logger
 
-# Create a file handler
-file_handler = logging.FileHandler('server.log',encoding='utf-8')
-file_handler.setLevel(logging.INFO)
+    logger = logging.getLogger('server')
+    logger.setLevel(logging.INFO)
 
-# Create a console handler
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
+    # Create a file handler
+    file_handler = logging.FileHandler('server.log', encoding='utf-8')
+    file_handler.setLevel(logging.INFO)
 
-# Create a formatter and add it to the handlers
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-console_handler.setFormatter(formatter)
+    # Create a console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
 
-# Add the handlers to the logger
-logger.addHandler(file_handler)
-logger.addHandler(console_handler)
+    # Create a formatter and add it to the handlers
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+
+    # Add the handlers to the logger
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+# Setup logging
+setup_logging()
 
 def is_valid_ip(ip):
     """Validates if the provided IP address is valid."""
@@ -196,6 +203,10 @@ def log_file_to_db(filename, file_size, saved_path):
     conn.commit()
     conn.close()
 
+def sanitize_filename(filename):
+    """Sanitize the filename to avoid directory traversal attacks."""
+    return re.sub(r'[<>:"/\\|?*]', '', filename)
+
 def handle_client(client_socket, log_text, addr):
     """Handles communication with a client."""
     global file_count_var, data_received_var
@@ -221,7 +232,7 @@ def handle_client(client_socket, log_text, addr):
         
         # Process metadata
         metadata = json.loads(header_data.split('\n', 1)[0])
-        filename = metadata["filename"]
+        filename = sanitize_filename(metadata["filename"])
         file_size = metadata["file_size"]
 
         logger.info(f"📁 Received filename: {filename}")
