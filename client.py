@@ -3,7 +3,7 @@ import os
 import json
 import zipfile
 import time
-from tkinter import Button, filedialog, messagebox, Label, Entry, StringVar, ttk, Toplevel
+from tkinter import Button, filedialog, messagebox, Label, Entry, StringVar, ttk, Toplevel, font
 from threading import Thread
 from tkinterdnd2 import DND_FILES, TkinterDnD
 import re
@@ -28,6 +28,13 @@ BUTTON_HOVER_COLOR = '#0056b3'
 # Initialize the root window
 root = TkinterDnD.Tk()
 root.title("TransferX")
+# Set the initial window size
+root.geometry("800x600")
+root.minsize(800, 600)
+root.iconbitmap('Logos/logo2.ico')
+
+# Apply the font globally
+root.option_add("*Font", font.Font(family=FONT))
 
 # Tkinter Variables
 server_ip_var = StringVar(value=DEFAULT_SERVER_IP)
@@ -35,9 +42,6 @@ server_port_var = StringVar(value=DEFAULT_SERVER_PORT)
 chunk_size_var = StringVar(value=DEFAULT_CHUNK_SIZE)
 roll_no_var = StringVar()
 
-# Set the initial window size
-root.geometry("800x600")
-root.minsize(800, 600)
 
 # Styling
 style = ttk.Style()
