@@ -10,7 +10,7 @@ import sqlite3
 # Constants
 SERVER_IP = '0.0.0.0'
 SERVER_PORT = 5000
-BUCKET_DIR = 'bucket_storage'
+BUCKET_DIR = 'bucket_storage/'
 DELIMITER = "---END-HEADER---"
 CHUNK_SIZE = 4096
 DB_FILE = 'server_data.db'
@@ -40,6 +40,8 @@ data_received_var = tk.IntVar(value=0)
 chunk_size_var = tk.IntVar(value=CHUNK_SIZE)
 server_ip_var = tk.StringVar(value=SERVER_IP)
 server_port_var = tk.IntVar(value=SERVER_PORT)
+directory_var = tk.StringVar(value=BUCKET_DIR)
+
 
 style = ttk.Style()
 style.configure("TNotebook.Tab", padding=[20, 10])
@@ -97,6 +99,10 @@ server_port_entry.grid(row=1, column=1, padx=20, pady=10)
 tk.Label(settings_frame, text="Chunk Size:").grid(row=2, column=0, padx=20, pady=10)
 chunk_size_entry = tk.Entry(settings_frame, textvariable=chunk_size_var)
 chunk_size_entry.grid(row=2, column=1, padx=20, pady=10)
+
+tk.Label(settings_frame, text="Storage Directory:").grid(row=3, column=0, padx=20, pady=10)
+directory_entry = tk.Entry(settings_frame, textvariable=directory_var)
+directory_entry.grid(row=3, column=1, padx=20, pady=10)
 
 apply_button = tk.Button(settings_frame, text="Apply", command=lambda: apply_settings(), height=2, width=10)
 apply_button.grid(row=3, column=0, columnspan=2, padx=20, pady=20)
@@ -211,6 +217,12 @@ def handle_client(client_socket, log_text, addr):
         log_text.insert(tk.END, f"📁 Received filename: {filename}\n")
         log_text.insert(tk.END, f"📏 Expected file size: {file_size} bytes\n")
 
+        # Save file in the specified directory
+        section = "default_section"  # Replace with actual section name if needed
+        directory_path = BUCKET_DIR.format(section_name=section)
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path, exist_ok=True)
+            
         # Save file
         file_path = os.path.join(BUCKET_DIR, filename)
         logger.info(f"💾 Saving file to: {file_path}")
@@ -399,10 +411,11 @@ def on_closing():
         
 def apply_settings():
     """Applies settings changes."""
-    global CHUNK_SIZE
+    global CHUNK_SIZE, BUCKET_DIR
     ip = server_ip_var.get()
     port = server_port_var.get()
     chunk_size = chunk_size_var.get()
+    directory = directory_var.get()
 
     if not is_valid_ip(ip):
         messagebox.showerror("Invalid IP", "The provided IP address is invalid.")
@@ -416,12 +429,41 @@ def apply_settings():
         messagebox.showerror("Invalid Chunk Size", "The chunk size must be a positive integer.")
         return
 
+    # Update chunk size and bucket directory
     CHUNK_SIZE = chunk_size
+    BUCKET_DIR = directory
+    
+    # Validate and apply the directory for storing files
+    if not os.path.exists(BUCKET_DIR):
+        os.makedirs(BUCKET_DIR, exist_ok=True)
+        logger.info(f"📂 Storage directory created: {BUCKET_DIR}")
+        log_text.insert(tk.END, f"📂 Storage directory created: {BUCKET_DIR}\n")
+        
+    messagebox.showinfo("Settings", "Settings updated successfully.")
+    
+    # Log the updated settings
+    # Define a formatted string for the table
+    settings_table = f"""
+    ⚙️ Settings applied:
+    ----------------------------------------------
+    | Parameter   | Value                        |
+    ----------------------------------------------
+    | IP Address  | {ip}                         |
+    | Port        | {port}                       |
+    | Chunk Size  | {CHUNK_SIZE}                 |
+    | Directory   | {BUCKET_DIR}                 |
+    ----------------------------------------------
+    """
+
+    # Log the settings
+    logger.info(settings_table)
+
+    # Insert into the tkinter log text box
+    log_text.insert(tk.END, settings_table + "\n")
+
     if server_running:
         restart_server()
         
-    messagebox.showinfo("Settings", "Settings updated successfully.")
-
 # Initialize the database
 init_db()
 
