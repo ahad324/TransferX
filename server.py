@@ -10,16 +10,18 @@ import sqlite3
 # Constants
 SERVER_IP = '0.0.0.0'
 SERVER_PORT = 5000
-BUCKET_DIR = 'bucket_storage/'
+BUCKET_DIR = 'bucket_storage\\'
 DELIMITER = "---END-HEADER---"
 CHUNK_SIZE = 4096
 DB_FILE = 'server_data.db'
+FONT= "Segoe UI"
 
 # Create the bucket storage directory if it doesn't exist
 os.makedirs(BUCKET_DIR, exist_ok=True)
 
 # Define colors
-BG_COLOR = '#2E2E2E'
+DARK_BG_COLOR = '#2E2E2E'
+LIGHT_BG_COLOR = '#F0F2F5'
 
 # Server control flags
 server_running = False
@@ -31,7 +33,7 @@ root = tk.Tk()
 root.title("Server Control Panel")
 root.geometry("800x600")
 root.minsize(800, 600)
-root.configure(bg=BG_COLOR)
+root.configure(bg=DARK_BG_COLOR)
 
 # Tkinter variables
 connection_count_var = tk.IntVar(value=0)
@@ -54,7 +56,7 @@ notebook.pack(pady=20, expand=True, fill="both")
 style.configure("TNotebook.Tab", padding=[20, 10])
 
 # Create a frame for the log
-log_frame = tk.Frame(notebook)
+log_frame = tk.Frame(notebook,padx=20)
 log_frame.pack(fill=tk.BOTH, expand=True)
 notebook.add(log_frame, text="Logs")
 
@@ -67,8 +69,9 @@ settings_frame = tk.Frame(notebook)
 notebook.add(settings_frame, text="Settings")
 
 # Create and pack the log text area
-log_text = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD, height=20)
+log_text = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD,bg=LIGHT_BG_COLOR, height=20)
 log_text.pack(pady=20, fill=tk.BOTH, expand=True)
+log_text.insert(tk.END, "CLICK ON THE START SERVER BUTTON...\n")
 
 # Create and pack the status frame
 status_frame.grid_columnconfigure(0, weight=1)
@@ -86,30 +89,39 @@ tk.Label(status_frame, text="Chunk Size (bytes):").grid(row=3, column=0, padx=20
 tk.Label(status_frame, textvariable=chunk_size_var).grid(row=3, column=1, padx=20, pady=10)
 
 # Create and pack the settings frame
+# Configure columns for equal weight to center content
 settings_frame.grid_columnconfigure(0, weight=1)
-settings_frame.grid_columnconfigure(1, weight=1)
-tk.Label(settings_frame, text="Server IP:").grid(row=0, column=0, padx=20, pady=10)
-server_ip_entry = tk.Entry(settings_frame, textvariable=server_ip_var)
+settings_frame.grid_columnconfigure(1, weight=2)
+
+# Server IP Label and Entry
+tk.Label(settings_frame, text="Server IP:", anchor="e", font=(FONT, 12, "bold")).grid(row=0, column=0, padx=20, pady=10, sticky="e")
+server_ip_entry = tk.Entry(settings_frame, textvariable=server_ip_var, font=(FONT, 12), width=30)
 server_ip_entry.grid(row=0, column=1, padx=20, pady=10)
 
-tk.Label(settings_frame, text="Port:").grid(row=1, column=0, padx=20, pady=10)
-server_port_entry = tk.Entry(settings_frame, textvariable=server_port_var)
+# Port Label and Entry
+tk.Label(settings_frame, text="Port:", anchor="e", font=(FONT, 12, "bold")).grid(row=1, column=0, padx=20, pady=10, sticky="e")
+server_port_entry = tk.Entry(settings_frame, textvariable=server_port_var, font=(FONT, 12), width=30)
 server_port_entry.grid(row=1, column=1, padx=20, pady=10)
 
-tk.Label(settings_frame, text="Chunk Size:").grid(row=2, column=0, padx=20, pady=10)
-chunk_size_entry = tk.Entry(settings_frame, textvariable=chunk_size_var)
+# Chunk Size Label and Entry
+tk.Label(settings_frame, text="Chunk Size:", anchor="e", font=(FONT, 12, "bold")).grid(row=2, column=0, padx=20, pady=10, sticky="e")
+chunk_size_entry = tk.Entry(settings_frame, textvariable=chunk_size_var, font=(FONT, 12), width=30)
 chunk_size_entry.grid(row=2, column=1, padx=20, pady=10)
 
-tk.Label(settings_frame, text="Storage Directory:").grid(row=3, column=0, padx=20, pady=10)
-directory_entry = tk.Entry(settings_frame, textvariable=directory_var)
+# Storage Directory Label and Entry
+tk.Label(settings_frame, text="Storage Directory:", anchor="e", font=(FONT, 12, "bold")).grid(row=3, column=0, padx=20, pady=10, sticky="e")
+directory_entry = tk.Entry(settings_frame, textvariable=directory_var, font=(FONT, 12), width=30)
 directory_entry.grid(row=3, column=1, padx=20, pady=10)
 
-apply_button = tk.Button(settings_frame, text="Apply", command=lambda: apply_settings(), height=2, width=10)
-apply_button.grid(row=3, column=0, columnspan=2, padx=20, pady=20)
+# Apply Button
+apply_button = tk.Button(settings_frame, text="Apply", command=lambda:apply_settings(), height=2, width=10,bg="#4CAF50", fg="white", relief="raised")
+apply_button.grid(row=4, column=0, columnspan=2, padx=20, pady=20, sticky="n")
+
+
 
 # Create and pack the button frame
 button_frame = tk.Frame(root)
-button_frame.config(bg=BG_COLOR)
+button_frame.config(bg=DARK_BG_COLOR)
 button_frame.pack(pady=20)
 
 start_button = tk.Button(button_frame, text="Start Server", command=lambda: start_server(), height=2, width=10)
@@ -273,6 +285,7 @@ def log_session_summary():
         f"| Data Received (bytes)    | {str(data_received_var.get()).ljust(14)}|\n"
         f"| Chunk Size (bytes)       | {str(chunk_size_var.get()).ljust(14)}|\n"
         f"{'-' * 44}\n"
+        f"<{'=' * 60}>\n"
     )
 
     # Log the session summary
