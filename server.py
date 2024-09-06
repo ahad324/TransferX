@@ -262,18 +262,48 @@ def handle_client(client_socket, log_text, addr):
         connection_count_var.set(len(connections))
 
 def log_session_summary():
-    """Logs the summary of the server session with emojis and clear formatting."""
-    summary = (
-        f"🔄 <{'-' * 20} Session Summary {'-' * 20}> 🔄\n"
-        f"📁 Files Processed: {file_count_var.get()}\n"
-        f"📊 Data Received: {data_received_var.get()} bytes\n"
-        f"📦 Chunk Size: {chunk_size_var.get()} bytes\n"
-        f"🔚 <{'=' * 80}> 🔚\n"
+    """Logs the summary of the server session in a table format with clear formatting."""
+    # Create a formatted table string
+    session_table = (
+        "🔄  Session Summary:\n"
+        f"{'-' * 44}\n"
+        "| Parameter                | Value         |\n"
+        f"{'-' * 44}\n"
+        f"| Files Processed          | {str(file_count_var.get()).ljust(14)}|\n"
+        f"| Data Received (bytes)    | {str(data_received_var.get()).ljust(14)}|\n"
+        f"| Chunk Size (bytes)       | {str(chunk_size_var.get()).ljust(14)}|\n"
+        f"{'-' * 44}\n"
     )
-    logger.info(summary)
-    log_text.insert(tk.END, summary)
+
+    # Log the session summary
+    logger.info(session_table)
+
+    # Insert into the tkinter log text box
+    log_text.insert(tk.END, session_table + "\n")
     log_text.yview(tk.END)
 
+def log_settings_summary(ip, port, chunk_size, bucket_dir):
+    """Logs the current settings in a table format with clear formatting."""
+    # Create a formatted table string
+    settings_table = (
+        "⚙️  Settings applied:\n"
+        "----------------------------------------------\n"
+        "| Parameter   | Value                        |\n"
+        "----------------------------------------------\n"
+        f"| IP Address  | {str(ip).ljust(28)}|\n"
+        f"| Port        | {str(port).ljust(28)}|\n"
+        f"| Chunk Size  | {str(chunk_size).ljust(28)}|\n"
+        f"| Directory   | {bucket_dir.ljust(28)}|\n"
+        "----------------------------------------------\n"
+    )
+
+    # Log the settings
+    logger.info(settings_table)
+
+    # Insert into the tkinter log text box
+    log_text.insert(tk.END, settings_table + "\n")
+    log_text.yview(tk.END)
+    
 def log_separator(context):
     """Logs a separator for better navigation within the log file with emojis."""
     separator = (
@@ -381,8 +411,8 @@ def check_server_stopped():
         if server_socket:
             server_socket.close()
             server_socket = None
-        logger.info(f"{'🛑' * 5} Server stopped successfully.")
-        log_text.insert(tk.END, f"{'🛑' * 5} Server stopped successfully.\n")
+        logger.info("🛑 Server stopped successfully.")
+        log_text.insert(tk.END, "🛑  Server stopped successfully.\n")
         log_session_summary()
     except Exception as e:
         logger.error(f"{'❌' * 5} Error stopping the server: {e}")
@@ -442,24 +472,7 @@ def apply_settings():
     messagebox.showinfo("Settings", "Settings updated successfully.")
     
     # Log the updated settings
-    # Define a formatted string for the table
-    settings_table = f"""
-    ⚙️ Settings applied:
-    ----------------------------------------------
-    | Parameter   | Value                        |
-    ----------------------------------------------
-    | IP Address  | {ip}                         |
-    | Port        | {port}                       |
-    | Chunk Size  | {CHUNK_SIZE}                 |
-    | Directory   | {BUCKET_DIR}                 |
-    ----------------------------------------------
-    """
-
-    # Log the settings
-    logger.info(settings_table)
-
-    # Insert into the tkinter log text box
-    log_text.insert(tk.END, settings_table + "\n")
+    log_settings_summary(ip,port,chunk_size,directory)
 
     if server_running:
         restart_server()
