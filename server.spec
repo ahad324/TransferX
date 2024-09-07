@@ -1,11 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
 a = Analysis(
     ['server.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('Logo/logo.ico', '.')],  # Include logo
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -35,4 +34,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='Logo/logo.ico',  # Add icon to the executable
 )

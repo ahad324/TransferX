@@ -31,7 +31,7 @@ root.title("TransferX")
 # Set the initial window size
 root.geometry("800x600")
 root.minsize(800, 600)
-root.iconbitmap('Logos/logo2.ico')
+root.iconbitmap('Logo/logo.ico')
 
 # Apply the font globally
 root.option_add("*Font", font.Font(family=FONT))

@@ -9,7 +9,7 @@ a = Analysis(
     ['client.py'],
     pathex=[os.path.dirname(os.path.abspath(__name__))],
     binaries=[],
-    datas=collect_data_files('tkinterdnd2'),
+    datas=collect_data_files('tkinterdnd2') + [('Logo/logo.ico', '.')],  # Include logo
     hiddenimports=['tkinterdnd2'],
     hookspath=[],
     hooksconfig={},
@@ -40,4 +40,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='Logo/logo.ico',  # Add icon to the executable
 )

@@ -34,7 +34,7 @@ root = tk.Tk()
 root.title("Server Control Panel")
 root.geometry("800x630")
 root.minsize(800, 630)
-root.iconbitmap('Logos/logo2.ico')
+root.iconbitmap('Logo/logo.ico')
 root.configure(bg=DARK_BG_COLOR)
 
 # Apply the font globally
@@ -79,16 +79,16 @@ log_text.insert(tk.END, "CLICK ON THE START SERVER BUTTON...\n")
 # Create and pack the status frame
 status_frame.grid_columnconfigure(0, weight=1)
 status_frame.grid_columnconfigure(1, weight=1)
-tk.Label(status_frame, text="Active Connections:").grid(row=0, column=0, padx=20, pady=10)
+tk.Label(status_frame, text="Active Connections:",font=(FONT,12,"bold")).grid(row=0, column=0, padx=20, pady=10)
 tk.Label(status_frame, textvariable=connection_count_var).grid(row=0, column=1, padx=20, pady=10)
 
-tk.Label(status_frame, text="Files Processed:").grid(row=1, column=0, padx=20, pady=10)
+tk.Label(status_frame, text="Files Processed:",font=(FONT,12,"bold")).grid(row=1, column=0, padx=20, pady=10)
 tk.Label(status_frame, textvariable=file_count_var).grid(row=1, column=1, padx=20, pady=10)
 
-tk.Label(status_frame, text="Data Received (bytes):").grid(row=2, column=0, padx=20, pady=10)
+tk.Label(status_frame, text="Data Received (bytes):",font=(FONT,12,"bold")).grid(row=2, column=0, padx=20, pady=10)
 tk.Label(status_frame, textvariable=data_received_var).grid(row=2, column=1, padx=20, pady=10)
 
-tk.Label(status_frame, text="Chunk Size (bytes):").grid(row=3, column=0, padx=20, pady=10)
+tk.Label(status_frame, text="Chunk Size (bytes):",font=(FONT,12,"bold")).grid(row=3, column=0, padx=20, pady=10)
 tk.Label(status_frame, textvariable=chunk_size_var).grid(row=3, column=1, padx=20, pady=10)
 
 # Create and pack the settings frame
