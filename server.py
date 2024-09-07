@@ -72,7 +72,7 @@ settings_frame = tk.Frame(notebook)
 notebook.add(settings_frame, text="Settings")
 
 # Create and pack the log text area
-log_text = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD,bg=LIGHT_BG_COLOR, height=20)
+log_text = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD,bg=LIGHT_BG_COLOR,height=20,font=("Courier",10))
 log_text.pack(pady=20, fill=tk.BOTH, expand=True)
 log_text.insert(tk.END, "CLICK ON THE START SERVER BUTTON...\n")
 
@@ -97,22 +97,22 @@ settings_frame.grid_columnconfigure(0, weight=1)
 settings_frame.grid_columnconfigure(1, weight=2)
 
 # Server IP Label and Entry
-tk.Label(settings_frame, text="Server IP:", anchor="e", font=( 12, "bold")).grid(row=0, column=0, padx=20, pady=10, sticky="e")
+tk.Label(settings_frame, text="Server IP:", anchor="e", font=(FONT, 12, "bold")).grid(row=0, column=0, padx=20, pady=10, sticky="e")
 server_ip_entry = tk.Entry(settings_frame, textvariable=server_ip_var, font=( 12), width=30)
 server_ip_entry.grid(row=0, column=1, padx=20, pady=10)
 
 # Port Label and Entry
-tk.Label(settings_frame, text="Port:", anchor="e", font=( 12, "bold")).grid(row=1, column=0, padx=20, pady=10, sticky="e")
+tk.Label(settings_frame, text="Port:", anchor="e", font=(FONT, 12, "bold")).grid(row=1, column=0, padx=20, pady=10, sticky="e")
 server_port_entry = tk.Entry(settings_frame, textvariable=server_port_var, font=( 12), width=30)
 server_port_entry.grid(row=1, column=1, padx=20, pady=10)
 
 # Chunk Size Label and Entry
-tk.Label(settings_frame, text="Chunk Size:", anchor="e", font=( 12, "bold")).grid(row=2, column=0, padx=20, pady=10, sticky="e")
+tk.Label(settings_frame, text="Chunk Size:", anchor="e", font=(FONT, 12, "bold")).grid(row=2, column=0, padx=20, pady=10, sticky="e")
 chunk_size_entry = tk.Entry(settings_frame, textvariable=chunk_size_var, font=( 12), width=30)
 chunk_size_entry.grid(row=2, column=1, padx=20, pady=10)
 
 # Storage Directory Label and Entry
-tk.Label(settings_frame, text="Storage Directory:", anchor="e", font=( 12, "bold")).grid(row=3, column=0, padx=20, pady=10, sticky="e")
+tk.Label(settings_frame, text="Storage Directory:", anchor="e", font=(FONT, 12, "bold")).grid(row=3, column=0, padx=20, pady=10, sticky="e")
 directory_entry = tk.Entry(settings_frame, textvariable=directory_var, font=( 12), width=30)
 directory_entry.grid(row=3, column=1, padx=20, pady=10)
 
@@ -133,7 +133,7 @@ start_button.pack(side=tk.LEFT, padx=20)
 stop_button = tk.Button(button_frame, text="Stop Server", command=lambda: stop_server(), state=tk.DISABLED, height=2, width=10)
 stop_button.pack(side=tk.LEFT, padx=20)
 
-restart_button = tk.Button(button_frame, text="Restart Server", command=lambda: restart_server(), state=tk.DISABLED, height=2, width=10)
+restart_button = tk.Button(button_frame, text="Restart Server", command=lambda: restart_server(), state=tk.DISABLED, height=2, width=12)
 restart_button.pack(side=tk.LEFT, padx=20)
 
 clear_button = tk.Button(button_frame, text="Clear Logs", command=lambda: clear_logs(), height=2, width=10)
@@ -292,7 +292,7 @@ def log_session_summary():
     session_table = (
         "🔄  Session Summary:\n"
         f"{'-' * 44}\n"
-        "| Parameter                | Value         |\n"
+        "| Parameter                 | Value         |\n"
         f"{'-' * 44}\n"
         f"| Files Processed          | {str(file_count_var.get()).ljust(14)}|\n"
         f"| Data Received (bytes)    | {str(data_received_var.get()).ljust(14)}|\n"
