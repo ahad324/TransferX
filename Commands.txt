@@ -1,0 +1,14 @@
+python -m venv myenv
+myenv\Scripts\activate
+pip install pyinstaller
+python -m PyInstaller --onefile --windowed client.py
+python -m PyInstaller --onefile --windowed server.py
+
+## With outer packages imports
+pyinstaller server.spec
+pyinstaller client.spec
+
+<===== Find IP ========>
+ipconfig | findstr /i "ipv4"
+<========= For devices in local Network ==========>
+netstat
