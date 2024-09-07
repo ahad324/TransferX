@@ -9,7 +9,7 @@ a = Analysis(
     ['client.py'],
     pathex=[os.path.dirname(os.path.abspath(__name__))],
     binaries=[],
-    datas=collect_data_files('tkinterdnd2') + [('Logo/logo.ico', '.')],  # Include logo
+    datas=collect_data_files('tkinterdnd2') + [('Logo/logo.ico', 'Logo')],  # Include logo
     hiddenimports=['tkinterdnd2'],
     hookspath=[],
     hooksconfig={},

@@ -29,12 +29,18 @@ server_running = False
 stop_event = Event()
 connections = []  # Track active connections
 
+# To set the Icon on every Window 
+def set_window_icon(window):
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    logo_path = os.path.join(current_dir, 'Logo', 'logo.ico')
+    window.iconbitmap(logo_path)
+    
 # Initialize the Tkinter root window
 root = tk.Tk()
 root.title("Server Control Panel")
 root.geometry("800x630")
 root.minsize(800, 630)
-root.iconbitmap('Logo/logo.ico')
+set_window_icon(root)
 root.configure(bg=DARK_BG_COLOR)
 
 # Apply the font globally

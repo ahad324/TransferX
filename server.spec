@@ -4,7 +4,7 @@ a = Analysis(
     ['server.py'],
     pathex=[],
     binaries=[],
-    datas=[('Logo/logo.ico', '.')],  # Include logo
+    datas=[('Logo/logo.ico', 'Logo')],  # Include logo
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

@@ -25,13 +25,19 @@ ENTRY_FG_COLOR = '#212529'
 PROGRESSBAR_COLOR = '#28A745'
 BUTTON_HOVER_COLOR = '#0056b3'
 
+# To set the Icon on every Window 
+def set_window_icon(window):
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    logo_path = os.path.join(current_dir, 'Logo', 'logo.ico')
+    window.iconbitmap(logo_path)
+
 # Initialize the root window
 root = TkinterDnD.Tk()
 root.title("TransferX")
 # Set the initial window size
 root.geometry("800x600")
 root.minsize(800, 600)
-root.iconbitmap('Logo/logo.ico')
+set_window_icon(root)
 
 # Apply the font globally
 root.option_add("*Font", font.Font(family=FONT))
@@ -142,6 +148,7 @@ def create_progress_dialog():
     dialog = Toplevel(root)
     dialog.title("Uploading")
     dialog.geometry("350x250")
+    set_window_icon(dialog)
     dialog.transient(root)
     dialog.grab_set()
 
@@ -262,6 +269,7 @@ def create_settings_dialog():
     dialog = Toplevel(root)
     dialog.title("Settings")
     dialog.geometry("400x300")
+    set_window_icon(dialog)
     dialog.transient(root)
     dialog.grab_set()
 
