@@ -1,6 +1,3 @@
-bucket_storage/
-build/
-dist/
+Server/{bucket_storage,build,dist,server.log,server_data.db,App}/
+Client/{build,dist,App}/
 myenv/
-server.log
-server_data.db

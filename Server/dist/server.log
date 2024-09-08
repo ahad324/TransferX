@@ -1,0 +1,26 @@
+2024-09-08 12:09:01,314 - server - INFO - |==================== 🚀 Server started on 0.0.0.0:5000 ====================|
+2024-09-08 12:09:06,266 - server - INFO - =====> 🔗 Accepted connection from ('127.0.0.1', 54228)
+2024-09-08 12:09:06,267 - server - INFO - 📁 Received filename: na.png
+2024-09-08 12:09:06,268 - server - INFO - 📏 Expected file size: 98769 bytes
+2024-09-08 12:09:06,321 - server - INFO - 💾 Saving file to: bucket_storage\na.png
+2024-09-08 12:09:06,474 - server - INFO - ✅ File received successfully: na.png
+2024-09-08 12:09:06,654 - server - INFO - ✅✅✅✅✅ Connection with ('127.0.0.1', 54228) is clossed!
+
+2024-09-08 12:09:29,161 - server - INFO - =====> 🔗 Accepted connection from ('127.0.0.1', 54239)
+2024-09-08 12:09:29,162 - server - INFO - 📁 Received filename: nasa.exe
+2024-09-08 12:09:29,163 - server - INFO - 📏 Expected file size: 109249408 bytes
+2024-09-08 12:09:29,171 - server - INFO - 💾 Saving file to: bucket_storage\nasa.exe
+2024-09-08 12:09:44,718 - server - ERROR - ⚠️⚠️⚠️⚠️⚠️ File transfer incomplete: nasa.exe
+2024-09-08 12:09:44,747 - server - INFO - ✅✅✅✅✅ Connection with ('127.0.0.1', 54239) is clossed!
+
+2024-09-08 12:10:11,308 - server - INFO - 🛑 Server stopped successfully.
+2024-09-08 12:10:11,309 - server - INFO - 🔄  Session Summary:
+--------------------------------------------
+| Parameter                 | Value         |
+--------------------------------------------
+| Files Processed          | 1             |
+| Data Received (bytes)    | 18706897      |
+| Chunk Size (bytes)       | 4096          |
+--------------------------------------------
+<============================================================>
+
