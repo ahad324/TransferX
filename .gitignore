@@ -1,12 +1,15 @@
-Server/bucket_storage/*
-Server/build/*
-Server/dist/*
+# Server directories and files
+Server/bucket_storage/
+Server/build/
+Server/dist/
 Server/server.log
 Server/server_data.db
-Server/App/*
+Server/App/
 
-Client/build/*
-Client/dist/*
-Client/App/*
+# Client directories
+Client/build/
+Client/dist/
+Client/App/
 
+# Virtual environment
 myenv/
