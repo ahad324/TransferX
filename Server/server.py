@@ -37,6 +37,14 @@ else:
     # Set the directory for non-bundled app files (use current directory)
     BASE_DIR = CURRENT_DIR
 
+def ensure_base_dir_exists():
+    if not BASE_DIR.exists():
+        BASE_DIR.mkdir(parents=True, exist_ok=True)
+        # print(f"Created base directory: {BASE_DIR}")
+
+# Create the base directory if it doesn't exist
+ensure_base_dir_exists()
+
 # Constants
 SERVER_IP = '0.0.0.0'
 SERVER_PORT = 5000
@@ -47,8 +55,6 @@ LOG_FILE = os.path.join(BASE_DIR, 'server.log')
 BUCKET_DIR = os.path.join(BASE_DIR, 'bucket_storage')
 FONT = "Segoe UI"
 
-# Create the bucket storage directory if it doesn't exist
-os.makedirs(BUCKET_DIR, exist_ok=True)
 
 # Define colors
 DARK_BG_COLOR = '#2E2E2E'

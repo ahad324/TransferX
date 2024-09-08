@@ -40,8 +40,7 @@ else:
 def ensure_base_dir_exists():
     if not BASE_DIR.exists():
         BASE_DIR.mkdir(parents=True, exist_ok=True)
-        print(f"Created base directory: {BASE_DIR}")
-
+        # print(f"Created base directory: {BASE_DIR}")
 
 # Create the base directory if it doesn't exist
 ensure_base_dir_exists()
