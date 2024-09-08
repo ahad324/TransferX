@@ -10,10 +10,10 @@ SolidCompression=yes
 
 [Files]
 Source: "dist\client.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\Logo\logo.ico"; DestDir: "{app}\Logo"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\Logo\AppIcon.ico"; DestDir: "{app}\Logo"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\TransferX Client"; Filename: "{app}\client.exe"; IconFilename: "{app}\Logo\logo.ico"
+Name: "{group}\TransferX Client"; Filename: "{app}\client.exe"; IconFilename: "{app}\Logo\AppIcon.ico"
 Name: "{group}\Uninstall TransferX Client"; Filename: "{uninstallexe}"
 
 [Run]

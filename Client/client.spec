@@ -5,11 +5,13 @@ import os
 # Path to the virtual environment's site-packages
 venv_site_packages = os.path.join('myenv', 'Lib', 'site-packages')
 
+iconpath = '../Logo/logo.ico'
+
 a = Analysis(
     ['client.py'],
     pathex=[os.path.dirname(os.path.abspath(__name__))],
     binaries=[],
-    datas=collect_data_files('tkinterdnd2') + [('../Logo/logo.ico', 'Logo')],  # Include logo
+    datas=collect_data_files('tkinterdnd2') + [(iconpath, 'Logo')],  # Include logo
     hiddenimports=['tkinterdnd2'],
     hookspath=[],
     hooksconfig={},
@@ -40,5 +42,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='../Logo/logo.ico',  # Add icon to the executable
+    icon=iconpath,  # Add icon to the executable
 )

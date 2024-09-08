@@ -1,5 +1,6 @@
 import socket
 import os
+import sys
 import json
 import zipfile
 import time
@@ -7,6 +8,14 @@ from tkinter import Button, filedialog, messagebox, Label, Entry, StringVar, ttk
 from threading import Thread
 from tkinterdnd2 import DND_FILES, TkinterDnD
 import re
+
+# Determine the directory of the script
+if getattr(sys, 'frozen', False):
+    # Running in a bundled executable
+    CURRENT_DIR = sys._MEIPASS
+else:
+    # Running in a Python environment
+    CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Constants
 DEFAULT_SERVER_IP = '127.0.0.1'
@@ -27,8 +36,18 @@ BUTTON_HOVER_COLOR = '#0056b3'
 
 # To set the Icon on every Window 
 def set_window_icon(window):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # Determine if running in a PyInstaller bundle
+    if getattr(sys, 'frozen', False):
+        # Running in a bundle
+        current_dir = sys._MEIPASS
+    else:
+        # Running in a normal Python environment
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        current_dir = os.path.abspath(os.path.join(current_dir, '..'))
+    
+    # Construct the path to the logo
     logo_path = os.path.join(current_dir, 'Logo', 'logo.ico')
+    # Set the window icon
     window.iconbitmap(logo_path)
 
 # Initialize the root window
@@ -128,9 +147,9 @@ def on_drop(event):
             return
 
         if len(file_paths) > 1:
-            zip_file_path = f"{sanitize_filename(roll_no)}.zip"
-            zip_files(file_paths, zip_file_path)
-            submit_file(zip_file_path, roll_no)
+            zip_file_name = f"{sanitize_filename(roll_no)}.zip"
+            zip_files(file_paths, zip_file_name)
+            submit_file(os.path.join(CURRENT_DIR, zip_file_name), roll_no)
         else:
             submit_file(file_paths[0], roll_no)
 
@@ -145,6 +164,10 @@ select_button.bind("<Enter>", lambda e: select_button.config(bg=BUTTON_HOVER_COL
 select_button.bind("<Leave>", lambda e: select_button.config(bg=BUTTON_COLOR_LIGHT))
 
 def create_progress_dialog():
+    def on_closing():
+        # Do nothing to prevent closing the dialog
+        pass
+    
     dialog = Toplevel(root)
     dialog.title("Uploading")
     dialog.geometry("350x250")
@@ -168,6 +191,9 @@ def create_progress_dialog():
     time_label.pack(pady=5)
 
     center_window(dialog, 350, 250)
+    
+    # Override the default behavior of the close button
+    dialog.protocol("WM_DELETE_WINDOW", on_closing)
 
     return dialog, progress, progress_label, speed_label, time_label
 
@@ -183,16 +209,17 @@ def select_files():
             return
 
         if len(file_paths) > 1:
-            zip_file_path = f"{sanitize_filename(roll_no)}.zip"
-            zip_files(file_paths, zip_file_path)
-            submit_file(zip_file_path, roll_no)
+            zip_file_name = f"{sanitize_filename(roll_no)}.zip"
+            zip_files(file_paths, zip_file_name)
+            submit_file(os.path.join(CURRENT_DIR, zip_file_name), roll_no)
         else:
             submit_file(file_paths[0], roll_no)
-
-def zip_files(file_paths, zip_file_path):
+def zip_files(file_paths, zip_file_name):
+    zip_file_path = os.path.join(CURRENT_DIR, zip_file_name)
     with zipfile.ZipFile(zip_file_path, 'w') as zipf:
         for file in file_paths:
             zipf.write(file, os.path.basename(file))
+    # Optionally print the path for debugging
     # print(f"Created zip file: {zip_file_path}")
 
 def update_progress(progress, progress_label, speed_label, time_label, total_sent, file_size, start_time):

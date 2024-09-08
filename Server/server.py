@@ -1,5 +1,6 @@
 import socket
 import os
+import sys
 import json
 from threading import Thread, Event
 import tkinter as tk
@@ -8,13 +9,22 @@ import logging
 import sqlite3
 import re
 
+# Determine the directory of the script
+if getattr(sys, 'frozen', False):
+    # Running in a bundled executable
+    CURRENT_DIR = sys._MEIPASS
+else:
+    # Running in a Python environment
+    CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Constants
 SERVER_IP = '0.0.0.0'
 SERVER_PORT = 5000
-BUCKET_DIR = 'bucket_storage\\'
-DELIMITER = "---END-HEADER---"
 CHUNK_SIZE = 4096
-DB_FILE = 'server_data.db'
+DELIMITER = "---END-HEADER---"
+DB_FILE = os.path.join(CURRENT_DIR, 'server_data.db')
+LOG_FILE = os.path.join(CURRENT_DIR, 'server.log')
+BUCKET_DIR = os.path.join(CURRENT_DIR, 'bucket_storage')
 FONT= "Segoe UI"
 
 # Create the bucket storage directory if it doesn't exist
@@ -31,8 +41,18 @@ connections = []  # Track active connections
 
 # To set the Icon on every Window 
 def set_window_icon(window):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # Determine if running in a PyInstaller bundle
+    if getattr(sys, 'frozen', False):
+        # Running in a bundle
+        current_dir = sys._MEIPASS
+    else:
+        # Running in a normal Python environment
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        current_dir = os.path.abspath(os.path.join(current_dir, '..'))
+    
+    # Construct the path to the logo
     logo_path = os.path.join(current_dir, 'Logo', 'logo.ico')
+    # Set the window icon
     window.iconbitmap(logo_path)
     
 # Initialize the Tkinter root window
@@ -52,7 +72,7 @@ data_received_var = tk.IntVar(value=0)
 chunk_size_var = tk.IntVar(value=CHUNK_SIZE)
 server_ip_var = tk.StringVar(value=SERVER_IP)
 server_port_var = tk.IntVar(value=SERVER_PORT)
-directory_var = tk.StringVar(value=BUCKET_DIR)
+directory_var = tk.StringVar(value=BUCKET_DIR+"/")
 
 style = ttk.Style()
 style.configure("TNotebook.Tab", padding=[20, 10])
@@ -153,7 +173,7 @@ def setup_logging():
     logger.setLevel(logging.INFO)
 
     # Create a file handler
-    file_handler = logging.FileHandler('server.log', encoding='utf-8')
+    file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
     file_handler.setLevel(logging.INFO)
 
     # Create a console handler
