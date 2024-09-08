@@ -8,14 +8,43 @@ from tkinter import Button, filedialog, messagebox, Label, Entry, StringVar, ttk
 from threading import Thread
 from tkinterdnd2 import DND_FILES, TkinterDnD
 import re
+from pathlib import Path
 
-# Determine the directory of the script
+# Determine the user's Downloads folder path
+def get_downloads_folder():
+    if sys.platform == "win32":
+        # Windows
+        return Path(os.environ['USERPROFILE']) / 'Downloads'
+    elif sys.platform == "darwin":
+        # macOS
+        return Path.home() / 'Downloads'
+    elif sys.platform == "linux":
+        # Linux
+        return Path.home() / 'Downloads'
+    else:
+        # Other platforms
+        return Path.home()
+
+# Determine the base directory for file operations
 if getattr(sys, 'frozen', False):
     # Running in a bundled executable
-    CURRENT_DIR = sys._MEIPASS
+    CURRENT_DIR = Path(sys._MEIPASS)
+    # Set the directory for bundled app files (use Downloads folder and create 'TransferX Client')
+    BASE_DIR = get_downloads_folder() / 'TransferX Client'
 else:
     # Running in a Python environment
-    CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+    CURRENT_DIR = Path(__file__).parent
+    # Set the directory for non-bundled app files (use current directory)
+    BASE_DIR = CURRENT_DIR
+
+def ensure_base_dir_exists():
+    if not BASE_DIR.exists():
+        BASE_DIR.mkdir(parents=True, exist_ok=True)
+        print(f"Created base directory: {BASE_DIR}")
+
+
+# Create the base directory if it doesn't exist
+ensure_base_dir_exists()
 
 # Constants
 DEFAULT_SERVER_IP = '127.0.0.1'
@@ -36,15 +65,14 @@ BUTTON_HOVER_COLOR = '#0056b3'
 
 # To set the Icon on every Window 
 def set_window_icon(window):
-    # Determine if running in a PyInstaller bundle
     if getattr(sys, 'frozen', False):
         # Running in a bundle
         current_dir = sys._MEIPASS
     else:
         # Running in a normal Python environment
-        current_dir = os.path.dirname(os.path.abspath(__file__))
+        current_dir = Path(__file__).parent
         current_dir = os.path.abspath(os.path.join(current_dir, '..'))
-    
+
     # Construct the path to the logo
     logo_path = os.path.join(current_dir, 'Logo', 'logo.ico')
     # Set the window icon
@@ -148,8 +176,9 @@ def on_drop(event):
 
         if len(file_paths) > 1:
             zip_file_name = f"{sanitize_filename(roll_no)}.zip"
-            zip_files(file_paths, zip_file_name)
-            submit_file(os.path.join(CURRENT_DIR, zip_file_name), roll_no)
+            zip_file_path = os.path.join(BASE_DIR, zip_file_name)
+            zip_files(file_paths, zip_file_path)
+            submit_file(zip_file_path, roll_no)
         else:
             submit_file(file_paths[0], roll_no)
 
@@ -209,13 +238,12 @@ def select_files():
             return
 
         if len(file_paths) > 1:
-            zip_file_name = f"{sanitize_filename(roll_no)}.zip"
+            zip_file_name = os.path.join(BASE_DIR, f"{sanitize_filename(roll_no)}.zip")
             zip_files(file_paths, zip_file_name)
             submit_file(os.path.join(CURRENT_DIR, zip_file_name), roll_no)
         else:
             submit_file(file_paths[0], roll_no)
-def zip_files(file_paths, zip_file_name):
-    zip_file_path = os.path.join(CURRENT_DIR, zip_file_name)
+def zip_files(file_paths, zip_file_path):
     with zipfile.ZipFile(zip_file_path, 'w') as zipf:
         for file in file_paths:
             zipf.write(file, os.path.basename(file))
@@ -246,6 +274,7 @@ def submit_file(file_path, roll_no):
                     dialog.destroy()
                     return
 
+                # Determine the filename based on the file type
                 filename = f"{roll_no}.zip" if file_path.endswith('.zip') else f"{roll_no}{os.path.splitext(file_path)[1]}"
                 file_size = os.path.getsize(file_path)
 
@@ -263,6 +292,7 @@ def submit_file(file_path, roll_no):
                 total_sent = 0
                 start_time = time.time()
 
+                # Open the file from the correct directory
                 with open(file_path, 'rb') as f:
                     while True:
                         data = f.read(int(chunk_size_var.get()))

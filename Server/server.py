@@ -1,6 +1,7 @@
 import socket
 import os
 import sys
+from pathlib import Path
 import json
 from threading import Thread, Event
 import tkinter as tk
@@ -9,23 +10,42 @@ import logging
 import sqlite3
 import re
 
-# Determine the directory of the script
+# Determine the user's Downloads folder path
+def get_downloads_folder():
+    if sys.platform == "win32":
+        # Windows
+        return Path(os.environ['USERPROFILE']) / 'Downloads'
+    elif sys.platform == "darwin":
+        # macOS
+        return Path.home() / 'Downloads'
+    elif sys.platform == "linux":
+        # Linux
+        return Path.home() / 'Downloads'
+    else:
+        # Other platforms
+        return Path.home()
+
+# Determine the base directory for file operations
 if getattr(sys, 'frozen', False):
     # Running in a bundled executable
-    CURRENT_DIR = sys._MEIPASS
+    CURRENT_DIR = Path(sys._MEIPASS)
+    # Set the directory for bundled app files (use Downloads folder)
+    BASE_DIR = get_downloads_folder() / 'TransferX Server'
 else:
     # Running in a Python environment
-    CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+    CURRENT_DIR = Path(__file__).parent
+    # Set the directory for non-bundled app files (use current directory)
+    BASE_DIR = CURRENT_DIR
 
 # Constants
 SERVER_IP = '0.0.0.0'
 SERVER_PORT = 5000
 CHUNK_SIZE = 4096
 DELIMITER = "---END-HEADER---"
-DB_FILE = os.path.join(CURRENT_DIR, 'server_data.db')
-LOG_FILE = os.path.join(CURRENT_DIR, 'server.log')
-BUCKET_DIR = os.path.join(CURRENT_DIR, 'bucket_storage')
-FONT= "Segoe UI"
+DB_FILE = os.path.join(BASE_DIR, 'server_data.db')
+LOG_FILE = os.path.join(BASE_DIR, 'server.log')
+BUCKET_DIR = os.path.join(BASE_DIR, 'bucket_storage')
+FONT = "Segoe UI"
 
 # Create the bucket storage directory if it doesn't exist
 os.makedirs(BUCKET_DIR, exist_ok=True)
