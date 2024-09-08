@@ -1,12 +1,12 @@
-Server/bucket_storage/
-Server/build/
-Server/dist/
+Server/bucket_storage/*
+Server/build/*
+Server/dist/*
 Server/server.log
 Server/server_data.db
-Server/App/
+Server/App/*
 
-Client/build/
-Client/dist/
-Client/App/
+Client/build/*
+Client/dist/*
+Client/App/*
 
 myenv/
