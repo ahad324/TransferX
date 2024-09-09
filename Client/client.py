@@ -27,20 +27,15 @@ def get_downloads_folder():
 
 # Determine the base directory for file operations
 if getattr(sys, 'frozen', False):
-    # Running in a bundled executable
     CURRENT_DIR = Path(sys._MEIPASS)
-    # Set the directory for bundled app files (use Downloads folder and create 'TransferX Client')
     BASE_DIR = get_downloads_folder() / 'TransferX Client'
 else:
-    # Running in a Python environment
     CURRENT_DIR = Path(__file__).parent
-    # Set the directory for non-bundled app files (use current directory)
     BASE_DIR = CURRENT_DIR
 
 def ensure_base_dir_exists():
     if not BASE_DIR.exists():
         BASE_DIR.mkdir(parents=True, exist_ok=True)
-        # print(f"Created base directory: {BASE_DIR}")
 
 # Create the base directory if it doesn't exist
 ensure_base_dir_exists()
@@ -53,38 +48,27 @@ DELIMITER = "---END-HEADER---"
 FONT = 'Segoe UI'
 
 # Define colors
-BUTTON_COLOR_LIGHT = '#007BFF'
-BUTTON_COLOR_DARK = '#0056b3'
 BG_COLOR_LIGHT = '#F0F2F5'
 BG_COLOR_DARK = '#343A40'
+BUTTON_COLOR_LIGHT = '#007BFF'
+BUTTON_COLOR_DARK = '#0056b3'
 ENTRY_BG_COLOR = '#FFFFFF'
 ENTRY_FG_COLOR = '#212529'
 PROGRESSBAR_COLOR = '#28A745'
 BUTTON_HOVER_COLOR = '#0056b3'
 
-# To set the Icon on every Window 
+# To set the icon on every window
 def set_window_icon(window):
-    if getattr(sys, 'frozen', False):
-        # Running in a bundle
-        current_dir = sys._MEIPASS
-    else:
-        # Running in a normal Python environment
-        current_dir = Path(__file__).parent
-        current_dir = os.path.abspath(os.path.join(current_dir, '..'))
-
-    # Construct the path to the logo
+    current_dir = sys._MEIPASS if getattr(sys, 'frozen', False) else os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
     logo_path = os.path.join(current_dir, 'Logo', 'logo.ico')
-    # Set the window icon
     window.iconbitmap(logo_path)
 
-# Initialize the root window
+# Initialize the Tkinter root window
 root = TkinterDnD.Tk()
 root.title("TransferX")
-# Set the initial window size
 root.geometry("800x600")
-root.minsize(800, 600)
+root.minsize(300, 300)
 set_window_icon(root)
-
 # Apply the font globally
 root.option_add("*Font", font.Font(family=FONT))
 
@@ -94,12 +78,11 @@ server_port_var = StringVar(value=DEFAULT_SERVER_PORT)
 chunk_size_var = StringVar(value=DEFAULT_CHUNK_SIZE)
 roll_no_var = StringVar()
 
-
 # Styling
 style = ttk.Style()
 style.configure('TButton', font=(FONT, 12), padding=10, relief='flat', background=BUTTON_COLOR_LIGHT)
 style.configure('TLabel', font=(FONT, 16), padding=10)
-style.configure('TEntry', font=(FONT, 18), padding=10, relief='flat')
+style.configure('TEntry', font=(FONT, 18), padding=10, relief='raised')
 style.configure('TProgressbar', thickness=30, troughcolor='#D3D3D3')
 
 def set_light_theme():
@@ -113,7 +96,7 @@ def set_dark_theme():
     root.tk_setPalette(background=BG_COLOR_DARK, foreground='#FFFFFF')
     style.configure('TButton', background=BUTTON_COLOR_DARK, foreground='#FFFFFF')
     style.configure('TLabel', background=BG_COLOR_DARK, foreground='#FFFFFF')
-    style.configure('TEntry', background='#3C3C3C', foreground=ENTRY_FG_COLOR)
+    style.configure('TEntry', background=ENTRY_BG_COLOR, foreground=ENTRY_FG_COLOR)
     style.configure('TProgressbar', background=BUTTON_COLOR_DARK, troughcolor='#3C3C3C')
 
 def toggle_theme():
@@ -149,14 +132,14 @@ roll_no_label = Label(root, text="Enter your Roll Number:", anchor="center", fon
 roll_no_label.pack(pady=20)
 roll_no_entry = Entry(root, textvariable=roll_no_var, width=30, justify='center', borderwidth=0, font=(FONT, 20))
 roll_no_entry.pack(pady=20)
-roll_no_entry.config(bg=ENTRY_BG_COLOR, fg=ENTRY_FG_COLOR)
+roll_no_entry.config(bg=ENTRY_BG_COLOR, fg=ENTRY_FG_COLOR, highlightthickness=2, highlightbackground="black", highlightcolor="black")
 
 # Instructions
 instructions = Label(root, text="Drag and drop files here or click 'Select Files' to upload.\nIf multiple files are selected, they will be zipped.", font=(FONT, 18), wraplength=750, justify="center")
 instructions.pack(pady=20)
 
+# Function to sanitize the filename to avoid "Directory Traversal attack"
 def sanitize_filename(filename):
-    """Sanitize the filename to avoid directory traversal attacks."""
     return re.sub(r'[<>:"/\\|?*]', '', filename)
 
 def on_drop(event):
@@ -205,24 +188,19 @@ def create_progress_dialog():
 
     label = Label(dialog, text="Uploading...", font=(FONT, 16))
     label.pack(pady=15)
-
     progress = ttk.Progressbar(dialog, orient="horizontal", mode="determinate", length=300, style='TProgressbar')
     progress.pack(pady=15)
 
     progress_label = Label(dialog, text="0%", font=(FONT, 16))
     progress_label.pack(pady=10)
-
     speed_label = Label(dialog, text="Speed: 0 KB/s", font=(FONT, 14))
     speed_label.pack(pady=5)
-
     time_label = Label(dialog, text="Time Left: 0m 0s", font=(FONT, 14))
     time_label.pack(pady=5)
-
-    center_window(dialog, 350, 250)
     
+    center_window(dialog, 350, 250)
     # Override the default behavior of the close button
     dialog.protocol("WM_DELETE_WINDOW", on_closing)
-
     return dialog, progress, progress_label, speed_label, time_label
 
 # Ensure select_files only allows file selection
@@ -246,8 +224,6 @@ def zip_files(file_paths, zip_file_path):
     with zipfile.ZipFile(zip_file_path, 'w') as zipf:
         for file in file_paths:
             zipf.write(file, os.path.basename(file))
-    # Optionally print the path for debugging
-    # print(f"Created zip file: {zip_file_path}")
 
 def update_progress(progress, progress_label, speed_label, time_label, total_sent, file_size, start_time):
     elapsed_time = time.time() - start_time
@@ -262,7 +238,6 @@ def update_progress(progress, progress_label, speed_label, time_label, total_sen
 def submit_file(file_path, roll_no):
     try:
         dialog, progress, progress_label, speed_label, time_label = create_progress_dialog()
-
         def upload_file():
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
