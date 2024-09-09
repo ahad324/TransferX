@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-iconpath = '../Logo/logo.ico'
+iconpath = '../Logo/AppIcon.ico'
 
 a = Analysis(
     ['server.py'],

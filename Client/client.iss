@@ -7,6 +7,7 @@ OutputDir=.\App
 OutputBaseFilename=TransferXClientSetup
 Compression=lzma
 SolidCompression=yes
+SetupIconFile=..\Logo\AppIcon.ico
 
 [Files]
 Source: "dist\client.exe"; DestDir: "{app}"; Flags: ignoreversion
