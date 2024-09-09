@@ -5,7 +5,7 @@ import os
 # Path to the virtual environment's site-packages
 venv_site_packages = os.path.join('myenv', 'Lib', 'site-packages')
 
-iconpath = '../Logo/AppIcon.ico'
+iconpath = '../Logo/logo.ico'
 
 a = Analysis(
     ['client.py'],
