@@ -294,14 +294,12 @@ def handle_client(client_socket, log_text, addr):
         log_text.insert(tk.END, f"📁 Received filename: {filename}\n")
         log_text.insert(tk.END, f"📏 Expected file size: {file_size} bytes\n")
 
-        # Save file in the specified directory
-        section = "default_section"  # Replace with actual section name if needed
-        directory_path = BUCKET_DIR.format(section_name=section)
-        if not os.path.exists(directory_path):
-            os.makedirs(directory_path, exist_ok=True)
+        # Ensure the bucket directory exists
+        if not os.path.exists(BUCKET_DIR):
+            os.makedirs(BUCKET_DIR, exist_ok=True)
             
         # Save file
-        file_path = os.path.join(BUCKET_DIR, filename)
+        file_path = os.path.join(BUCKET_DIR, sanitize_filename(filename))
         logger.info(f"💾 Saving file to: {file_path}")
         log_text.insert(tk.END, f"💾 Saving file to: {file_path}\n")
 
