@@ -12,3 +12,4 @@ pyinstaller client.spec
 ipconfig | findstr /i "ipv4"
 <========= For devices in local Network ==========>
 netstat
+arp -a
