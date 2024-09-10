@@ -8,9 +8,7 @@ OutputBaseFilename=TransferXServerSetup
 Compression=lzma
 SolidCompression=yes
 SetupIconFile=..\Logo\AppIcon.ico
-
-VersionInfoCompany=AbdulAhad
-VersionInfoCopyright=Copyright © 2024 AbdulAhad
+AppPublisher=AbdulAhad
 
 [Files]
 Source: "dist\server.exe"; DestDir: "{app}"; Flags: ignoreversion

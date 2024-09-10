@@ -8,6 +8,7 @@ OutputBaseFilename=TransferXClientSetup
 Compression=lzma
 SolidCompression=yes
 SetupIconFile=..\Logo\AppIcon.ico
+AppPublisher=AbdulAhad
 
 VersionInfoCompany=AbdulAhad
 VersionInfoCopyright=Copyright © 2024 AbdulAhad
