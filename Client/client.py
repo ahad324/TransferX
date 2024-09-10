@@ -35,7 +35,7 @@ def ensure_base_dir_exists():
 ensure_base_dir_exists()
 
 # Constants
-DEFAULT_SERVER_IP = '192.168.1.2'
+DEFAULT_SERVER_IP = '192.168.1.102'
 DEFAULT_SERVER_PORT = 5000
 DEFAULT_CHUNK_SIZE = 8192
 DELIMITER = "---END-HEADER---"
