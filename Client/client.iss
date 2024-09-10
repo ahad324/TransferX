@@ -10,9 +10,6 @@ SolidCompression=yes
 SetupIconFile=..\Logo\AppIcon.ico
 AppPublisher=AbdulAhad
 
-VersionInfoCompany=AbdulAhad
-VersionInfoCopyright=Copyright © 2024 AbdulAhad
-
 [Files]
 Source: "dist\client.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\Logo\AppIcon.ico"; DestDir: "{app}\Logo"; Flags: ignoreversion recursesubdirs createallsubdirs
