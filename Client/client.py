@@ -1,13 +1,7 @@
-import socket
-import os
-import sys
-import json
-import zipfile
-import time
+import socket, re, time, zipfile, json, sys, os
 from tkinter import Button, filedialog, messagebox, Label, Entry, StringVar, ttk, Toplevel, font
 from threading import Thread
 from tkinterdnd2 import DND_FILES, TkinterDnD
-import re
 from pathlib import Path
 
 # Determine the user's Downloads folder path
@@ -43,16 +37,19 @@ ensure_base_dir_exists()
 # Constants
 DEFAULT_SERVER_IP = '192.168.1.2'
 DEFAULT_SERVER_PORT = 5000
-DEFAULT_CHUNK_SIZE = 4096
+DEFAULT_CHUNK_SIZE = 8192
 DELIMITER = "---END-HEADER---"
 FONT = 'Segoe UI'
+PASSWORD = "ahad"
 
 # Define colors
+WHITE_COLOR = 'white'
+BLACK_COLOR = 'black'
 BG_COLOR_LIGHT = '#F0F2F5'
 BG_COLOR_DARK = '#343A40'
 BUTTON_COLOR_LIGHT = '#007BFF'
 BUTTON_COLOR_DARK = '#0056b3'
-ENTRY_BG_COLOR = '#FFFFFF'
+ENTRY_BG_COLOR = WHITE_COLOR
 ENTRY_FG_COLOR = '#212529'
 PROGRESSBAR_COLOR = '#28A745'
 BUTTON_HOVER_COLOR = '#0056b3'
@@ -69,8 +66,7 @@ root.title("TransferX")
 root.geometry("800x600")
 root.minsize(300, 300)
 set_window_icon(root)
-# Apply the font globally
-root.option_add("*Font", font.Font(family=FONT))
+root.option_add("*Font", font.Font(family=FONT)) # Apply the font globally
 
 # Tkinter Variables
 server_ip_var = StringVar(value=DEFAULT_SERVER_IP)
@@ -87,15 +83,15 @@ style.configure('TProgressbar', thickness=30, troughcolor='#D3D3D3')
 
 def set_light_theme():
     root.tk_setPalette(background=BG_COLOR_LIGHT, foreground='#000000')
-    style.configure('TButton', background=BUTTON_COLOR_LIGHT, foreground='#FFFFFF')
+    style.configure('TButton', background=BUTTON_COLOR_LIGHT, foreground=WHITE_COLOR)
     style.configure('TLabel', background=BG_COLOR_LIGHT, foreground='#000000')
     style.configure('TEntry', background=ENTRY_BG_COLOR, foreground=ENTRY_FG_COLOR)
     style.configure('TProgressbar', background=PROGRESSBAR_COLOR, troughcolor='#D3D3D3')
 
 def set_dark_theme():
-    root.tk_setPalette(background=BG_COLOR_DARK, foreground='#FFFFFF')
-    style.configure('TButton', background=BUTTON_COLOR_DARK, foreground='#FFFFFF')
-    style.configure('TLabel', background=BG_COLOR_DARK, foreground='#FFFFFF')
+    root.tk_setPalette(background=BG_COLOR_DARK, foreground=WHITE_COLOR)
+    style.configure('TButton', background=BUTTON_COLOR_DARK, foreground=WHITE_COLOR)
+    style.configure('TLabel', background=BG_COLOR_DARK, foreground=WHITE_COLOR)
     style.configure('TEntry', background=ENTRY_BG_COLOR, foreground=ENTRY_FG_COLOR)
     style.configure('TProgressbar', background=BUTTON_COLOR_DARK, troughcolor='#3C3C3C')
 
@@ -122,17 +118,17 @@ def center_window(window, width, height):
 root.after(100, lambda: center_window(root, 800, 600))
 
 # Theme Toggle Button
-theme_button = Button(root, text="🌙", command=toggle_theme, font=(FONT, 12), bg=BUTTON_COLOR_LIGHT, fg='#FFFFFF', borderwidth=0, padx=10, pady=5)
-theme_button.place(relx=1.0, rely=0.0, anchor='ne')
+theme_button = Button(root, text="🌙", command=toggle_theme, font=(FONT, 12), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=0, padx=10, pady=5)
+theme_button.place(relx=1, rely=0, anchor='ne')
 theme_button.bind("<Enter>", lambda e: theme_button.config(bg=BUTTON_HOVER_COLOR))
 theme_button.bind("<Leave>", lambda e: theme_button.config(bg=BUTTON_COLOR_LIGHT))
 
 # Roll Number Input
-roll_no_label = Label(root, text="Enter your Roll Number:", anchor="center", font=(FONT, 18))
-roll_no_label.pack(pady=20)
-roll_no_entry = Entry(root, textvariable=roll_no_var, width=30, justify='center', borderwidth=0, font=(FONT, 20))
-roll_no_entry.pack(pady=20)
-roll_no_entry.config(bg=ENTRY_BG_COLOR, fg=ENTRY_FG_COLOR, highlightthickness=2, highlightbackground="black", highlightcolor="black")
+roll_no_label = Label(root, text="Enter your Roll Number:", anchor="center", font=(FONT, 18,"bold"))
+roll_no_label.pack(pady=(100, 5))
+roll_no_entry = Entry(root, textvariable=roll_no_var, width=30, justify='center',borderwidth=2, relief="solid", highlightthickness=2,font=(FONT, 18), bg=ENTRY_BG_COLOR, fg=ENTRY_FG_COLOR)
+roll_no_entry.config(highlightcolor='#007BFF', highlightbackground="#BDBDBD", relief="flat")
+roll_no_entry.pack(pady=(5, 10))
 
 # Instructions
 instructions = Label(root, text="Drag and drop files here or click 'Select Files' to upload.\nIf multiple files are selected, they will be zipped.", font=(FONT, 18), wraplength=750, justify="center")
@@ -169,16 +165,16 @@ root.drop_target_register(DND_FILES)
 root.dnd_bind('<<Drop>>', on_drop)
 
 # Select Files Button
-select_button = Button(root, text="Select Files", command=lambda: Thread(target=select_files).start(), font=(FONT, 14), bg=BUTTON_COLOR_LIGHT, fg='#FFFFFF', borderwidth=2, padx=15, pady=10)
+select_button = Button(root, text="Select Files", command=lambda: Thread(target=select_files).start(), font=(FONT, 14), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=2, padx=15, pady=10)
 select_button.pack(pady=30)
 select_button.bind("<Enter>", lambda e: select_button.config(bg=BUTTON_HOVER_COLOR))
 select_button.bind("<Leave>", lambda e: select_button.config(bg=BUTTON_COLOR_LIGHT))
 
 def create_progress_dialog():
     def on_closing():
-        # Do nothing to prevent closing the dialog
-        pass
-    
+        if messagebox.askokcancel("Quit", "Do you want to quit?"):
+            dialog.destroy()
+            
     dialog = Toplevel(root)
     dialog.title("Uploading")
     dialog.geometry("350x250")
@@ -199,6 +195,7 @@ def create_progress_dialog():
     time_label.pack(pady=5)
     
     center_window(dialog, 350, 250)
+    
     # Override the default behavior of the close button
     dialog.protocol("WM_DELETE_WINDOW", on_closing)
     return dialog, progress, progress_label, speed_label, time_label
@@ -357,19 +354,44 @@ def create_settings_dialog():
     chunk_size_entry.insert(0, chunk_size_var.get())
     chunk_size_entry.pack(pady=5)
 
-    apply_button = Button(dialog, text="Apply", command=apply_settings, font=(FONT, 14), bg=BUTTON_COLOR_LIGHT, fg='#FFFFFF', borderwidth=2, padx=10, pady=5)
+    apply_button = Button(dialog, text="Apply", command=apply_settings, font=(FONT, 14), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=2, padx=10, pady=5)
     apply_button.pack(pady=5)
     apply_button.bind("<Enter>", lambda e: apply_button.config(bg=BUTTON_HOVER_COLOR))
     apply_button.bind("<Leave>", lambda e: apply_button.config(bg=BUTTON_COLOR_LIGHT))
 
     center_window(dialog, 400, 300)
     return dialog
+def ask_for_password():
+    def verify_password():
+        entered_password = password_var.get()
+        if entered_password == PASSWORD:
+            password_dialog.destroy()
+            create_settings_dialog()
+        else:
+            messagebox.showerror("Error", "Incorrect password")
+
+    password_dialog = Toplevel(root)
+    password_dialog.title("Password Required")
+    password_dialog.geometry("300x150")
+    set_window_icon(password_dialog)
+    password_dialog.transient(root)
+    password_dialog.grab_set()
+
+    Label(password_dialog, text="Enter Password:", font=(FONT, 14)).pack(pady=10)
+    password_var = StringVar()
+    password_entry = Entry(password_dialog, textvariable=password_var, show='*', font=(FONT, 14))
+    password_entry.pack(pady=5)
+    
+    Button(password_dialog, text="Submit", command=verify_password, font=(FONT, 14), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=2, padx=10, pady=5).pack(pady=10)
+
+    center_window(password_dialog, 300, 150)
+    password_entry.focus_set()
 
 def open_settings():
-    create_settings_dialog()
+    ask_for_password()
 
 # Settings Button
-settings_button = Button(root, text="⚙️ Settings", command=open_settings, font=(FONT, 12), bg=BUTTON_COLOR_LIGHT, fg='#FFFFFF', borderwidth=0, padx=10, pady=5)
+settings_button = Button(root, text="⚙️ Settings", command=open_settings, font=(FONT, 12), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=0, padx=10, pady=5)
 settings_button.place(relx=1.0, rely=0.0, anchor='ne', x=-120)
 settings_button.bind("<Enter>", lambda e: settings_button.config(bg=BUTTON_HOVER_COLOR))
 settings_button.bind("<Leave>", lambda e: settings_button.config(bg=BUTTON_COLOR_LIGHT))

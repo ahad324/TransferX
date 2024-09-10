@@ -1,14 +1,8 @@
-import socket
-import os
-import sys
+import socket, sqlite3, re, os, sys, logging, json
 from pathlib import Path
-import json
 from threading import Thread, Event
 import tkinter as tk
 from tkinter import scrolledtext, messagebox, ttk, font
-import logging
-import sqlite3
-import re
 
 # Determine the user's Downloads folder path
 def get_downloads_folder():
@@ -30,16 +24,15 @@ else:
     BASE_DIR = CURRENT_DIR
     
 def ensure_base_dir_exists():
-    if not BASE_DIR.exists():
-        BASE_DIR.mkdir(parents=True, exist_ok=True)
-
-# Create the base directory if it doesn't exist
-ensure_base_dir_exists()
+    if not os.path.exists(BUCKET_DIR):
+        os.makedirs(BUCKET_DIR, exist_ok=True)
+        logger.info(f"📂 Storage directory created: {BUCKET_DIR}")
+        log_text.insert(tk.END, f"📂 Storage directory created: {BUCKET_DIR}\n")
 
 # Constants
 SERVER_IP = '0.0.0.0'
 SERVER_PORT = 5000
-CHUNK_SIZE = 4096
+CHUNK_SIZE = 8192
 DELIMITER = "---END-HEADER---"
 DB_FILE = os.path.join(BASE_DIR, 'server_data.db')
 LOG_FILE = os.path.join(BASE_DIR, 'server.log')
@@ -69,8 +62,7 @@ root.geometry("800x630")
 root.minsize(300, 300)
 set_window_icon(root)
 root.configure(bg=DARK_BG_COLOR)
-# Apply the font globally
-root.option_add("*Font", font.Font(family=FONT))
+root.option_add("*Font", font.Font(family=FONT)) # Apply the font globally
 
 # Tkinter variables
 connection_count_var = tk.IntVar(value=0)
@@ -83,7 +75,7 @@ directory_var = tk.StringVar(value=BUCKET_DIR+"/")
 
 # Style for the notebook tabs
 style = ttk.Style()
-style.configure("TNotebook.Tab", padding=[20, 10])
+style.configure("TNotebook.Tab", padding=[20, 10],font=(FONT,12,"bold"))
 
 # Create a notebook with tabs
 notebook = ttk.Notebook(root)
@@ -108,37 +100,42 @@ log_text.insert(tk.END, "CLICK ON THE START SERVER BUTTON...\n")
 # Status frame content
 status_frame.grid_columnconfigure(0, weight=1)
 status_frame.grid_columnconfigure(1, weight=1)
-tk.Label(status_frame, text="Active Connections:",font=(FONT,12,"bold")).grid(row=0, column=0, padx=20, pady=10)
-tk.Label(status_frame, textvariable=connection_count_var).grid(row=0, column=1, padx=20, pady=10)
+def create_status_label(frame, text, variable, row):
+    tk.Label(frame, text=text, font=(FONT, 12, "bold")).grid(row=row, column=0, padx=20, pady=10)
+    tk.Label(frame, textvariable=variable).grid(row=row, column=1, padx=20, pady=10)
+# Define labels
+status_labels = [
+    ("Active Connections:", connection_count_var),
+    ("Files Processed:", file_count_var),
+    ("Data Received (bytes):", data_received_var),
+    ("Chunk Size (bytes):", chunk_size_var)
+]
 
-tk.Label(status_frame, text="Files Processed:",font=(FONT,12,"bold")).grid(row=1, column=0, padx=20, pady=10)
-tk.Label(status_frame, textvariable=file_count_var).grid(row=1, column=1, padx=20, pady=10)
-
-tk.Label(status_frame, text="Data Received (bytes):",font=(FONT,12,"bold")).grid(row=2, column=0, padx=20, pady=10)
-tk.Label(status_frame, textvariable=data_received_var).grid(row=2, column=1, padx=20, pady=10)
-
-tk.Label(status_frame, text="Chunk Size (bytes):",font=(FONT,12,"bold")).grid(row=3, column=0, padx=20, pady=10)
-tk.Label(status_frame, textvariable=chunk_size_var).grid(row=3, column=1, padx=20, pady=10)
+# Create labels
+for i, (text, var) in enumerate(status_labels):
+    create_status_label(status_frame, text, var, i)
 
 # Settings frame content
 settings_frame.grid_columnconfigure(0, weight=1)
 settings_frame.grid_columnconfigure(1, weight=2)
 
-tk.Label(settings_frame, text="Server IP:", anchor="e", font=(FONT, 12, "bold")).grid(row=0, column=0, padx=20, pady=10, sticky="e")
-server_ip_entry = tk.Entry(settings_frame, textvariable=server_ip_var, font=( 12), width=30)
-server_ip_entry.grid(row=0, column=1, padx=20, pady=10)
+def create_label_entry(frame, label_text, text_variable, row, font=(FONT, 12, "bold"), entry_width=30):
+    tk.Label(frame, text=label_text, anchor="e", font=font).grid(row=row, column=0, padx=20, pady=10, sticky="e")
+    entry = tk.Entry(frame, textvariable=text_variable, font=(12), width=entry_width)
+    entry.grid(row=row, column=1, padx=20, pady=10)
+    return entry
 
-tk.Label(settings_frame, text="Port:", anchor="e", font=(FONT, 12, "bold")).grid(row=1, column=0, padx=20, pady=10, sticky="e")
-server_port_entry = tk.Entry(settings_frame, textvariable=server_port_var, font=( 12), width=30)
-server_port_entry.grid(row=1, column=1, padx=20, pady=10)
+# Create label-entry pairs
+entry_widgets = [
+    ("Server IP:", server_ip_var, 0),
+    ("Port:", server_port_var, 1),
+    ("Chunk Size:", chunk_size_var, 2),
+    ("Storage Directory:", directory_var, 3)
+]
+# Create labels and entries
+for label_text, text_var, row in entry_widgets:
+    create_label_entry(settings_frame, label_text, text_var, row)
 
-tk.Label(settings_frame, text="Chunk Size:", anchor="e", font=(FONT, 12, "bold")).grid(row=2, column=0, padx=20, pady=10, sticky="e")
-chunk_size_entry = tk.Entry(settings_frame, textvariable=chunk_size_var, font=( 12), width=30)
-chunk_size_entry.grid(row=2, column=1, padx=20, pady=10)
-
-tk.Label(settings_frame, text="Storage Directory:", anchor="e", font=(FONT, 12, "bold")).grid(row=3, column=0, padx=20, pady=10, sticky="e")
-directory_entry = tk.Entry(settings_frame, textvariable=directory_var, font=( 12), width=30)
-directory_entry.grid(row=3, column=1, padx=20, pady=10)
 
 apply_button = tk.Button(settings_frame, text="Apply", command=lambda:apply_settings(), height=2, width=10,bg="#4CAF50", fg="white", relief="raised",font=(FONT,10,"bold"))
 apply_button.grid(row=4, column=0, columnspan=2, padx=20, pady=20, sticky="n")
@@ -166,6 +163,11 @@ def setup_logging():
     logger = logging.getLogger('server')
     logger.setLevel(logging.INFO)
 
+    # Ensure the log directory exists
+    log_dir = os.path.dirname(LOG_FILE)
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir, exist_ok=True)
+        
     # Create file and console handlers
     file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
     file_handler.setLevel(logging.INFO)
@@ -263,7 +265,7 @@ def handle_client(client_socket, log_text, addr):
 
         # Ensure the bucket directory exists
         if not os.path.exists(BUCKET_DIR):
-            os.makedirs(BUCKET_DIR, exist_ok=True)
+            ensure_base_dir_exists()
 
         file_path = os.path.join(BUCKET_DIR, sanitize_filename(filename))
         logger.info(f"💾 Saving file to: {file_path}")
@@ -492,10 +494,7 @@ def apply_settings():
     CHUNK_SIZE = new_chunk_size
     BUCKET_DIR = new_dir
     
-    if not os.path.exists(BUCKET_DIR):
-        os.makedirs(BUCKET_DIR, exist_ok=True)
-        logger.info(f"📂 Storage directory created: {BUCKET_DIR}")
-        log_text.insert(tk.END, f"📂 Storage directory created: {BUCKET_DIR}\n")
+    ensure_base_dir_exists()
         
     messagebox.showinfo("Settings", "Settings updated successfully.")
     
@@ -506,6 +505,8 @@ def apply_settings():
         
 # Initialize the database
 init_db()
+# Create the base directory if it doesn't exist
+ensure_base_dir_exists()
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
 
