@@ -1,71 +1,43 @@
-# 🎓 Student File Submission System
+# 🚀 TransferX
 
-This project is a Python-based file submission system that allows students to submit their assignments via a GUI application. The system consists of a server application and a client application. The server receives files from clients and stores them in a designated folder, while the client allows students to select files, optionally compress them, and send them to the server.
+Welcome to **TransferX**—the ultimate offline file-sharing solution designed to make transferring files across your local network both intuitive and secure. **TransferX** combines a sleek interface with robust functionality, making it a top choice for seamless file transfers in personal and professional environments.
 
-## ✨ Features
+---
 
-### 🖥️ Server Application
-- **👨‍💻 GUI Interface:** The server has a user-friendly interface built with Tkinter, displaying logs, active connections, and other relevant information.
-- **📂 File Storage:** Files received from clients are saved in the `bucket_storage` directory.
-- **📈 Real-time Logs:** The server logs incoming connections, file transfers, and other activities in real-time.
-- **⚙️ Customizable Settings:** The server IP, port, and chunk size can be adjusted via the settings tab.
+## 🌟 Key Features
 
-### 💻 Client Application
-- **🖼️ GUI Interface:** The client has a simple and intuitive GUI, allowing students to select files for submission.
-- **🗜️ File Compression:** Multiple files can be compressed into a single ZIP file before submission.
-- **🌗 Theme Toggle:** Users can switch between light and dark themes in the client application.
-- **🚀 Progress Tracking:** The client displays a progress bar during file uploads, providing feedback on the submission process.
+- **🔒 Secure File Transfers**: Enjoy peace of mind with our local network-only transfers, ensuring your data remains private and secure.
+- **🔗 Auto-Connect**: Effortlessly connect to available servers with our Auto-Connect feature, eliminating the need for manual IP address entries.
+- **📁 Drag & Drop**: Simplify your file-sharing process by dragging and dropping files directly into the client window.
+- **📊 Real-Time Monitoring**: Stay informed with the UDP Logs tab, where you can monitor live UDP connections and server activities.
+- **🛡️ Password Protection**: Protect your application settings with a secure password, keeping your configurations safe from unauthorized access.
+- **🖼️ Customizable Interface**: Enjoy a visually appealing, user-friendly interface, complete with custom icons and a responsive design for an enhanced user experience.
 
-## 🛠️ Installation
+---
 
-### 📋 Requirements
-- Python 3.x
-- Required libraries:
-  - `socket`
-  - `os`
-  - `json`
-  - `tkinter`
-  - `zipfile`
-  - `threading`
-  - `logging`
+## 🛠️ Key Components
 
-Install the required libraries using pip:
+- **Server Application**: Efficiently manages file reception, storage, and incoming connections while logging all UDP communications for transparency and troubleshooting.
+- **Client Application**: Facilitates file transfers to the server, supports drag-and-drop functionality, and features auto-connect capabilities for effortless server connection.
+- **UDP Connection Handling**: Provides automatic server discovery through local network UDP broadcasts, with comprehensive connection logs for detailed monitoring.
 
-```bash
-pip install -r requirements.txt
-```
-## 🚀 Usage
+---
 
-### 🖥️ Running the Server
-1. Navigate to the server directory.
-2. Run the server application:
-    ```bash
-    python server.py
-    ```
-3. The server window will open, displaying the logs, active connections, and settings.
+## 🔧 Built With
 
-### 💻 Running the Client
-1. Navigate to the client directory.
-2. Run the client application:
-    ```bash
-    python client.py
-    ```
-3. The client window will open, allowing students to select files, choose a theme, and submit their assignments.
+<p align="center">
+  <img src="https://skillicons.dev/icons?i=python" alt="Python" width="50" />
+</p>
 
-### 📤 Submission Process
-1. Students select the files they want to submit.
-2. Optionally, they can compress the files into a ZIP archive.
-3. Click the "Submit" button to send the files to the server.
-4. The server will store the files in the `bucket_storage` directory.
+---
 
-## 🎨 Customization
+## 🚀 Get Started
 
-### ⚙️ Server Settings
-- The server IP, port, and chunk size can be customized through the settings tab in the server application.
+To dive into **TransferX**:
 
-### 🌗 Client Themes
-- The client application allows users to toggle between light and dark themes for a personalized experience.
+1. Visit our [GitHub repository](https://github.com/ahad324/transferX) to explore the source code, documentation, and latest updates.
+2. Download the latest version and start transferring files seamlessly within your local network!
 
-## 🤝 Contributing
+---
 
-Contributions are welcome! Please feel free to submit a pull request or report any issues you encounter.
+Made with ❤️ by **AbdulAhad**
