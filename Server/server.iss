@@ -11,12 +11,12 @@ SetupIconFile=..\Logo\AppIcon.ico
 AppPublisher=AbdulAhad
 
 [Files]
-Source: "dist\server.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\TransferX Server.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\Logo\AppIcon.ico"; DestDir: "{app}\Logo"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\TransferX Server"; Filename: "{app}\server.exe"; IconFilename: "{app}\Logo\AppIcon.ico"
+Name: "{group}\TransferX Server"; Filename: "{app}\TransferX Server.exe"; IconFilename: "{app}\Logo\AppIcon.ico"
 Name: "{group}\Uninstall TransferX Server"; Filename: "{uninstallexe}"
 
 [Run]
-Filename: "{app}\server.exe"; Description: "Launch TransferX Server"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\TransferX Server.exe"; Description: "Launch TransferX Server"; Flags: nowait postinstall skipifsilent

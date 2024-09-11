@@ -1,13 +1,15 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_data_files
+import os
 
 iconpath = '../Logo/logo.ico'
 
 a = Analysis(
-    ['server.py'],
-    pathex=[],
+    ['server.py', 'udp_connect.py'],  # Include udp_connect.py
+    pathex=[os.path.dirname(os.path.abspath(__name__))],
     binaries=[],
     datas=[(iconpath, 'Logo')],  # Include logo
-    hiddenimports=[],
+    hiddenimports=[],  # Add any hidden imports required
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -15,6 +17,7 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
@@ -23,14 +26,14 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='server',
+    name='TransferX Server',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=False,  # Set to True if you need a console window for debugging
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

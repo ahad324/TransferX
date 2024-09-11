@@ -3,7 +3,7 @@ from pathlib import Path
 from threading import Thread, Event
 import tkinter as tk
 from tkinter import scrolledtext, messagebox, ttk, font
-
+import udp_connect
 # Determine the user's Downloads folder path
 def get_downloads_folder():
     if sys.platform == "win32":
@@ -38,7 +38,6 @@ DB_FILE = os.path.join(BASE_DIR, 'server_data.db')
 LOG_FILE = os.path.join(BASE_DIR, 'server.log')
 BUCKET_DIR = os.path.join(BASE_DIR, 'bucket_storage')
 FONT = "Segoe UI"
-
 
 # Define colors
 DARK_BG_COLOR = '#2E2E2E'
@@ -86,6 +85,10 @@ log_frame = tk.Frame(notebook,padx=20)
 log_frame.pack(fill=tk.BOTH, expand=True)
 notebook.add(log_frame, text="Logs")
 
+udp_log_frame = tk.Frame(notebook, padx=20)
+udp_log_frame.pack(fill=tk.BOTH, expand=True)
+notebook.add(udp_log_frame, text="UDP Logs")
+
 status_frame = tk.Frame(notebook)
 notebook.add(status_frame, text="Status")
 
@@ -96,6 +99,11 @@ notebook.add(settings_frame, text="Settings")
 log_text = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD,bg=LIGHT_BG_COLOR,height=20,font=("Courier",10))
 log_text.pack(pady=20, fill=tk.BOTH, expand=True)
 log_text.insert(tk.END, "CLICK ON THE START SERVER BUTTON...\n")
+
+# Create and pack the UDP log text area
+udp_log_text = scrolledtext.ScrolledText(udp_log_frame, wrap=tk.WORD, bg=LIGHT_BG_COLOR, height=20, font=("Courier", 10))
+udp_log_text.pack(pady=20, fill=tk.BOTH, expand=True)
+udp_log_text.insert(tk.END, "UDP Connection logs will appear here...\n")
 
 # Status frame content
 status_frame.grid_columnconfigure(0, weight=1)
@@ -157,6 +165,13 @@ restart_button.pack(side=tk.LEFT, padx=20)
 clear_button = tk.Button(button_frame, text="Clear Logs", command=lambda: clear_logs(), height=2, width=10)
 clear_button.pack(side=tk.LEFT, padx=20)
 
+# Function to append text to UDP log
+def append_udp_log(message):
+    def update_log():
+        udp_log_text.insert(tk.END, message + "\n")
+        udp_log_text.yview(tk.END)
+    root.after(0, update_log)
+    
 # Setup logging configuration
 def setup_logging():
     global logger
@@ -384,6 +399,8 @@ def start_server():
             Thread(target=accept_connections, daemon=True).start()
             logger.info(f"|{'=' * 20 } 🚀 Server started on {ip}:{port} {'=' * 20 }|")
             log_text.insert(tk.END, f"|{'=' * 20 } 🚀 Server started on {ip}:{port} {'=' * 20 }|\n")
+            # Start the UDP listener
+            udp_connect.start_udp_listener(BASE_DIR, append_udp_log)
             
         except socket.error as e:
             if e.errno == 10048:
@@ -420,7 +437,8 @@ def stop_server():
     if not server_running:
         messagebox.showwarning("⚠️ Server not running", "The server is not currently running.")
         return
-
+    # Stop the UDP listener
+    udp_connect.stop_udp_listener()
     server_running = False
     stop_event.set()
 

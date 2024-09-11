@@ -1,8 +1,9 @@
 import socket, re, time, zipfile, json, sys, os
-from tkinter import Button, filedialog, messagebox, Label, Entry, StringVar, ttk, Toplevel, font
+from tkinter import Button, filedialog, messagebox, Label, Entry, StringVar, ttk, Toplevel, font, Listbox
 from threading import Thread
 from tkinterdnd2 import DND_FILES, TkinterDnD
 from pathlib import Path
+import udp_connect
 
 # Determine the user's Downloads folder path
 def get_downloads_folder():
@@ -122,6 +123,63 @@ theme_button = Button(root, text="🌙", command=toggle_theme, font=(FONT, 12), 
 theme_button.place(relx=1, rely=0, anchor='ne')
 theme_button.bind("<Enter>", lambda e: theme_button.config(bg=BUTTON_HOVER_COLOR))
 theme_button.bind("<Leave>", lambda e: theme_button.config(bg=BUTTON_COLOR_LIGHT))
+
+def create_loading_screen():
+    loading_dialog = Toplevel(root)
+    loading_dialog.title("Connecting")
+    loading_dialog.geometry("300x150")
+    set_window_icon(loading_dialog)
+    loading_dialog.transient(root)
+    loading_dialog.grab_set()
+
+    Label(loading_dialog, text="Finding server, please wait...", font=(FONT, 16)).pack(pady=30)
+    progress = ttk.Progressbar(loading_dialog, orient="horizontal", mode="indeterminate", length=250)
+    progress.pack(pady=10)
+    progress.start()
+
+    loading_dialog.protocol("WM_DELETE_WINDOW", lambda: loading_dialog.destroy() if messagebox.askokcancel("Quit", "Do you want to quit?") else None)
+    center_window(loading_dialog, 300, 150)
+    
+    return loading_dialog
+
+# Auto connect to server Function
+def auto_connect():
+    loading_dialog = create_loading_screen()
+
+    def on_discovery_complete(server_ip, error=None):
+        loading_dialog.destroy()
+        if error:
+            messagebox.showerror("Error", error)
+        elif server_ip:
+            server_ip_var.set(server_ip)
+            messagebox.showinfo("Success", f"Connected to server at {server_ip}")
+        else:
+            messagebox.showerror("Error", "Failed to discover server. Please try again.")
+
+    def discovery_with_timeout():
+        try:
+            server_ip = udp_connect.discover_server_ip(timeout=5)
+            on_discovery_complete(server_ip)
+        except Exception as e:
+            on_discovery_complete(None, f"An error occurred: {str(e)}")
+
+    Thread(target=discovery_with_timeout).start()
+
+# Auto-Connect Button
+auto_connect_button = Button(
+    root,
+    text="Auto Connect",
+    command=lambda: Thread(target=auto_connect).start(),
+    font=(FONT, 12),
+    bg=BUTTON_COLOR_LIGHT,
+    fg=WHITE_COLOR,
+    borderwidth=0,
+    padx=10,
+    pady=5
+)
+auto_connect_button.place(relx=0.0, rely=0.0, anchor='nw')
+auto_connect_button.bind("<Enter>", lambda e: auto_connect_button.config(bg=BUTTON_HOVER_COLOR))
+auto_connect_button.bind("<Leave>", lambda e: auto_connect_button.config(bg=BUTTON_COLOR_LIGHT))
 
 # Roll Number Input
 roll_no_label = Label(root, text="Enter your Roll Number:", anchor="center", font=(FONT, 18,"bold"))

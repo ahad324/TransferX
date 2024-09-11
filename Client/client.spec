@@ -8,7 +8,7 @@ venv_site_packages = os.path.join('myenv', 'Lib', 'site-packages')
 iconpath = '../Logo/logo.ico'
 
 a = Analysis(
-    ['client.py'],
+    ['client.py', 'udp_connect.py'],  # Include udp_connect.py
     pathex=[os.path.dirname(os.path.abspath(__name__))],
     binaries=[],
     datas=collect_data_files('tkinterdnd2') + [(iconpath, 'Logo')],  # Include logo
@@ -29,7 +29,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='client',
+    name='TransferX Client',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

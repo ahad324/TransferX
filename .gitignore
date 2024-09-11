@@ -1,14 +1,17 @@
 # Server directories and files
+Server/__pycache__/
+Server/App/
 Server/bucket_storage/
 Server/build/
 Server/dist/
 Server/server.log
 Server/server_data.db
-Server/App/
+Server/udp_connections.log
 
 # Client directories
 Client/build/
 Client/dist/
+Client/__pycache__/
 Client/App/
 
 # Virtual environment
