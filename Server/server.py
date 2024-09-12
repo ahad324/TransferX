@@ -260,10 +260,10 @@ def handle_client(client_socket, log_text, addr):
                 if not chunk:
                     break
                 data += chunk
-            return data.decode()
+            return data
 
         # Receive header data
-        header_data = receive_until_delimiter(DELIMITER)
+        header_data = receive_until_delimiter(DELIMITER).decode()
         if not header_data:
             logger.error(f"{'❌' * 10} Header data not received correctly.")
             log_text.insert(tk.END, f"{'❌' * 10} Header data not received correctly.\n")
@@ -274,9 +274,6 @@ def handle_client(client_socket, log_text, addr):
         metadata = json.loads(header_data.split('\n', 1)[0])
         filename = sanitize_filename(metadata["filename"])
         file_size = metadata["file_size"]
-
-        logger.info(f"📁 Received filename: {filename}\n📏 Expected file size: {file_size} bytes\n")
-        log_text.insert(tk.END, f"📁 Received filename: {filename}\n📏 Expected file size: {file_size} bytes\n")
 
         # Ensure the bucket directory exists
         if not os.path.exists(BUCKET_DIR):
@@ -397,8 +394,8 @@ def start_server():
             restart_button.config(state=tk.NORMAL)
 
             Thread(target=accept_connections, daemon=True).start()
-            logger.info(f"|{'=' * 20 } 🚀 Server started on {ip}:{port} {'=' * 20 }|")
-            log_text.insert(tk.END, f"|{'=' * 20 } 🚀 Server started on {ip}:{port} {'=' * 20 }|\n")
+            logger.info(f"|{'=' * 20 } 📡 Server started on {ip}:{port} {'=' * 20 }|")
+            log_text.insert(tk.END, f"|{'=' * 20 } 📡 Server started on {ip}:{port} {'=' * 20 }|\n")
             # Start the UDP listener
             udp_connect.start_udp_listener(BASE_DIR, append_udp_log)
             
@@ -461,8 +458,8 @@ def check_server_stopped():
         if server_socket:
             server_socket.close()
             server_socket = None
-        logger.info("🛑 Server stopped successfully.")
-        log_text.insert(tk.END, "🛑  Server stopped successfully.\n")
+        logger.info("🛑 Server stopped.")
+        log_text.insert(tk.END, "🛑  Server stopped.\n")
         log_session_summary()
     except Exception as e:
         logger.error(f"❌ Error stopping the server: {e}")

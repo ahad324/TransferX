@@ -23,7 +23,7 @@ def get_downloads_folder():
 # Determine the base directory for file operations
 if getattr(sys, 'frozen', False):
     CURRENT_DIR = Path(sys._MEIPASS)
-    BASE_DIR = get_downloads_folder() / 'TransferX Client'
+    BASE_DIR = get_downloads_folder() / 'TransferX'
 else:
     CURRENT_DIR = Path(__file__).parent
     BASE_DIR = CURRENT_DIR

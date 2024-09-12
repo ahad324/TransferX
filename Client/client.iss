@@ -1,22 +1,23 @@
 [Setup]
-AppName=TransferX Client
-AppVersion=1.0
-DefaultDirName={pf}\TransferX Client
-DefaultGroupName=TransferX Client
+AppName=TransferX
+AppVersion=1.3
+DefaultDirName={pf}\TransferX
+DefaultGroupName=TransferX
 OutputDir=.\App
-OutputBaseFilename=TransferXClientSetup
+OutputBaseFilename=TransferX
 Compression=lzma
 SolidCompression=yes
 SetupIconFile=..\Logo\AppIcon.ico
 AppPublisher=AbdulAhad
 
 [Files]
-Source: "dist\TransferX Client.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\TransferX.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\Logo\AppIcon.ico"; DestDir: "{app}\Logo"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\TransferX Client"; Filename: "{app}\TransferX Client.exe"; IconFilename: "{app}\Logo\AppIcon.ico"
-Name: "{group}\Uninstall TransferX Client"; Filename: "{uninstallexe}"
+Name: "{group}\TransferX"; Filename: "{app}\TransferX.exe"; IconFilename: "{app}\Logo\AppIcon.ico"
+Name: "{group}\Uninstall TransferX"; Filename: "{uninstallexe}"
+Name: "{userdesktop}\TransferX"; Filename: "{app}\TransferX.exe"; IconFilename: "{app}\Logo\AppIcon.ico"
 
 [Run]
-Filename: "{app}\TransferX Client.exe"; Description: "Launch TransferX Client"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\TransferX.exe"; Description: "Launch TransferX"; Flags: nowait postinstall skipifsilent
