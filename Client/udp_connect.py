@@ -19,8 +19,12 @@ def discover_server_ip(timeout=5):
             try:
                 response, server_address = udp_sock.recvfrom(1024)
                 server_ip = response.decode()
-                return server_ip
+                return {"status": "success", "server_ip": server_ip}
             except socket.timeout:
-                return None
+                return {"status": "error", "message": "Connection timed out. Please check your network settings."}
+            except socket.error as e:
+                return {"status": "error", "message": f"Socket error: {str(e)}"}
+    except socket.error as e:
+        return {"status": "error", "message": f"Socket initialization error: {str(e)}"}
     finally:
         udp_sock.close()

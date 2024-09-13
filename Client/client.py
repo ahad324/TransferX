@@ -1,5 +1,5 @@
 import socket, re, time, zipfile, json, sys, os
-from tkinter import Button, filedialog, messagebox, Label, Entry, StringVar, ttk, Toplevel, font, Listbox
+from tkinter import ttk,Button, filedialog, messagebox, Label, Entry, StringVar, ttk, Toplevel, font, Listbox
 from threading import Thread
 from tkinterdnd2 import DND_FILES, TkinterDnD
 from pathlib import Path
@@ -42,6 +42,7 @@ DEFAULT_CHUNK_SIZE = 8192
 DELIMITER = "---END-HEADER---"
 FONT = 'Segoe UI'
 PASSWORD = "ahad"
+TIMEOUT = 5
 
 # Define colors
 WHITE_COLOR = 'white'
@@ -54,6 +55,8 @@ ENTRY_BG_COLOR = WHITE_COLOR
 ENTRY_FG_COLOR = '#212529'
 PROGRESSBAR_COLOR = '#28A745'
 BUTTON_HOVER_COLOR = '#0056b3'
+ERROR_COLOR = "red"
+SUCCESS_COLOR = "green"
 
 # To set the icon on every window
 def set_window_icon(window):
@@ -146,29 +149,29 @@ def create_loading_screen():
 def auto_connect():
     loading_dialog = create_loading_screen()
 
-    def on_discovery_complete(server_ip, error=None):
-        loading_dialog.destroy()
-        if error:
-            messagebox.showerror("Error", error)
-        elif server_ip:
-            server_ip_var.set(server_ip)
-            messagebox.showinfo("Success", f"Connected to server at {server_ip}")
-        else:
-            messagebox.showerror("Error", "Failed to discover server. Please try again.")
+    def on_discovery_complete(result):
+        loading_dialog.destroy()  # Close the loading dialog
+        if result['status'] == 'error':
+            messagebox.showerror("Error", result['message'])
+            status_label.config(text="Server Status: Disconnected", fg=ERROR_COLOR)
+        elif result['status'] == 'success':
+            server_ip_var.set(result['server_ip'])
+            messagebox.showinfo("Success", f"Connected to server at {result['server_ip']}")
+            status_label.config(text=f"Server Status: Connected to {result['server_ip']}", fg=SUCCESS_COLOR)
 
     def discovery_with_timeout():
         try:
-            server_ip = udp_connect.discover_server_ip(timeout=5)
-            on_discovery_complete(server_ip)
+            result = udp_connect.discover_server_ip(TIMEOUT)
+            on_discovery_complete(result)
         except Exception as e:
-            on_discovery_complete(None, f"An error occurred: {str(e)}")
+            on_discovery_complete({"status": "error", "message": f"An unexpected error occurred: {str(e)}"})
 
     Thread(target=discovery_with_timeout).start()
 
 # Auto-Connect Button
 auto_connect_button = Button(
     root,
-    text="Auto Connect",
+    text="Connect to Server",
     command=lambda: Thread(target=auto_connect).start(),
     font=(FONT, 12),
     bg=BUTTON_COLOR_LIGHT,
@@ -227,6 +230,14 @@ select_button = Button(root, text="Select Files", command=lambda: Thread(target=
 select_button.pack(pady=30)
 select_button.bind("<Enter>", lambda e: select_button.config(bg=BUTTON_HOVER_COLOR))
 select_button.bind("<Leave>", lambda e: select_button.config(bg=BUTTON_COLOR_LIGHT))
+
+# Create a frame to hold the status label
+status_frame = ttk.Frame(root)
+status_frame.pack(side='bottom', anchor='sw', padx=10, pady=10, fill='x')
+
+# Create the status label
+status_label = Label(status_frame, text="Server Status: Disconnected", font=(FONT, 14), fg=ERROR_COLOR, anchor='w')
+status_label.pack(side='left', fill='x', expand=True)
 
 def create_progress_dialog():
     def on_closing():
@@ -295,11 +306,17 @@ def submit_file(file_path, roll_no):
         dialog, progress, progress_label, speed_label, time_label = create_progress_dialog()
         def upload_file():
             try:
+                # Create a socket connection
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                
+                # Try to connect to the server
+                server_ip = server_ip_var.get()
+                server_port = int(server_port_var.get())
+                
                 try:
-                    s.connect((server_ip_var.get(), int(server_port_var.get())))
-                except ConnectionRefusedError:
-                    messagebox.showerror("Connection Error", "Could not connect to the server. Please make sure the server is running.")
+                    s.connect((server_ip, server_port))
+                except (ConnectionRefusedError, OSError) as e:
+                    messagebox.showerror("Connection Error", f"Could not connect to the server at {server_ip}:{server_port}. Please make sure the server is running. Error: {e}")
                     dialog.destroy()
                     return
 
@@ -340,8 +357,9 @@ def submit_file(file_path, roll_no):
                 if response == 'ok':
                     messagebox.showinfo("Success", "File uploaded successfully!")
                 else:
-                    messagebox.showerror("Error", "Failed to upload file.")
-                
+                    messagebox.showerror("Error", "Failed to upload file.")         
+            except Exception as e:
+                messagebox.showerror("Error", f"An error occurred during file upload: {str(e)}")
             finally:
                 s.close()
                 dialog.destroy()
@@ -350,6 +368,7 @@ def submit_file(file_path, roll_no):
 
     except Exception as e:
         messagebox.showerror("Error", str(e))
+        status_label.config(text="Server Status: Disconnected", fg=ERROR_COLOR)
 
 def create_settings_dialog():
     dialog = Toplevel(root)
