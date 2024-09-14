@@ -88,7 +88,7 @@ style.configure('TProgressbar', thickness=30, troughcolor='#D3D3D3')
 # Create the status frame
 status_frame = ttk.Frame(root)
 status_frame.pack(side='bottom', anchor='sw', padx=5, pady=5, fill='x')
-static_status_label = Label(status_frame, text="Server Status:", font=(FONT, 16, "bold"), fg=BLACK_COLOR, anchor='w')
+static_status_label = Label(status_frame, text="Server Connection Status:", font=(FONT, 16, "bold"), fg=BLACK_COLOR, anchor='w')
 static_status_label.pack(side='left')
 dynamic_status_label = Label(status_frame, text="Disconnected", font=(FONT, 16,"bold"), fg=ERROR_COLOR, anchor='w')
 dynamic_status_label.pack(side='left', fill='x', expand=True)
