@@ -42,7 +42,7 @@ DEFAULT_CHUNK_SIZE = 8192
 DELIMITER = "---END-HEADER---"
 FONT = 'Segoe UI'
 PASSWORD = "ahad"
-TIMEOUT = 5
+TIMEOUT = 10
 
 # Define colors
 WHITE_COLOR = 'white'
@@ -85,12 +85,22 @@ style.configure('TLabel', font=(FONT, 16), padding=10)
 style.configure('TEntry', font=(FONT, 18), padding=10, relief='raised')
 style.configure('TProgressbar', thickness=30, troughcolor='#D3D3D3')
 
+# Create the status frame
+status_frame = ttk.Frame(root)
+status_frame.pack(side='bottom', anchor='sw', padx=5, pady=5, fill='x')
+static_status_label = Label(status_frame, text="Server Status:", font=(FONT, 16, "bold"), fg=BLACK_COLOR, anchor='w')
+static_status_label.pack(side='left')
+dynamic_status_label = Label(status_frame, text="Disconnected", font=(FONT, 16,"bold"), fg=ERROR_COLOR, anchor='w')
+dynamic_status_label.pack(side='left', fill='x', expand=True)
+
+
 def set_light_theme():
     root.tk_setPalette(background=BG_COLOR_LIGHT, foreground='#000000')
     style.configure('TButton', background=BUTTON_COLOR_LIGHT, foreground=WHITE_COLOR)
     style.configure('TLabel', background=BG_COLOR_LIGHT, foreground='#000000')
     style.configure('TEntry', background=ENTRY_BG_COLOR, foreground=ENTRY_FG_COLOR)
     style.configure('TProgressbar', background=PROGRESSBAR_COLOR, troughcolor='#D3D3D3')
+    static_status_label.config(fg=BLACK_COLOR)
 
 def set_dark_theme():
     root.tk_setPalette(background=BG_COLOR_DARK, foreground=WHITE_COLOR)
@@ -98,6 +108,7 @@ def set_dark_theme():
     style.configure('TLabel', background=BG_COLOR_DARK, foreground=WHITE_COLOR)
     style.configure('TEntry', background=ENTRY_BG_COLOR, foreground=ENTRY_FG_COLOR)
     style.configure('TProgressbar', background=BUTTON_COLOR_DARK, troughcolor='#3C3C3C')
+    static_status_label.config(fg=WHITE_COLOR)
 
 def toggle_theme():
     global theme
@@ -145,28 +156,44 @@ def create_loading_screen():
     
     return loading_dialog
 
+def update_connection_status(message,color):
+    dynamic_status_label.config(text=message, fg=color)
+    
+# Handle discovery completion, used in both settings and auto-connect
+def on_discovery_complete(result, loading_dialog):
+    loading_dialog.destroy()  # Close the loading dialog
+    if result['status'] == 'error':
+        messagebox.showerror("Error", result['message'])
+        update_connection_status("Disconnected", ERROR_COLOR)
+    elif result['status'] == 'success':
+        server_ip_var.set(result['server_ip'])
+        messagebox.showinfo("Success", f"Connected to server at {result['server_ip']}")
+        update_connection_status(f"Connected to {result['server_ip']}", SUCCESS_COLOR)
+
+# Discovery logic with optional server IP, can be reused
+def start_server_discovery(ip=None):
+    try:
+        if ip is None:
+            # No IP and port provided, use broadcast discovery
+            result = udp_connect.discover_server(timeout=TIMEOUT)
+        else:
+            # Use specific IP and port to discover server
+            result = udp_connect.discover_server(ip, TIMEOUT)
+        
+        return result
+    except Exception as e:
+        return {"status": "error", "message": f"An unexpected error occurred: {str(e)}"}
+
 # Auto connect to server Function
 def auto_connect():
     loading_dialog = create_loading_screen()
 
-    def on_discovery_complete(result):
-        loading_dialog.destroy()  # Close the loading dialog
-        if result['status'] == 'error':
-            messagebox.showerror("Error", result['message'])
-            status_label.config(text="Server Status: Disconnected", fg=ERROR_COLOR)
-        elif result['status'] == 'success':
-            server_ip_var.set(result['server_ip'])
-            messagebox.showinfo("Success", f"Connected to server at {result['server_ip']}")
-            status_label.config(text=f"Server Status: Connected to {result['server_ip']}", fg=SUCCESS_COLOR)
+    def async_discovery():
+        result = start_server_discovery()
+        on_discovery_complete(result, loading_dialog)
 
-    def discovery_with_timeout():
-        try:
-            result = udp_connect.discover_server_ip(TIMEOUT)
-            on_discovery_complete(result)
-        except Exception as e:
-            on_discovery_complete({"status": "error", "message": f"An unexpected error occurred: {str(e)}"})
-
-    Thread(target=discovery_with_timeout).start()
+    # Run discovery in a separate thread to avoid blocking the UI
+    Thread(target=async_discovery).start()
 
 # Auto-Connect Button
 auto_connect_button = Button(
@@ -230,14 +257,6 @@ select_button = Button(root, text="Select Files", command=lambda: Thread(target=
 select_button.pack(pady=30)
 select_button.bind("<Enter>", lambda e: select_button.config(bg=BUTTON_HOVER_COLOR))
 select_button.bind("<Leave>", lambda e: select_button.config(bg=BUTTON_COLOR_LIGHT))
-
-# Create a frame to hold the status label
-status_frame = ttk.Frame(root)
-status_frame.pack(side='bottom', anchor='sw', padx=10, pady=10, fill='x')
-
-# Create the status label
-status_label = Label(status_frame, text="Server Status: Disconnected", font=(FONT, 14), fg=ERROR_COLOR, anchor='w')
-status_label.pack(side='left', fill='x', expand=True)
 
 def create_progress_dialog():
     def on_closing():
@@ -368,7 +387,7 @@ def submit_file(file_path, roll_no):
 
     except Exception as e:
         messagebox.showerror("Error", str(e))
-        status_label.config(text="Server Status: Disconnected", fg=ERROR_COLOR)
+        update_connection_status("Disconnected:",ERROR_COLOR)
 
 def create_settings_dialog():
     dialog = Toplevel(root)
@@ -395,7 +414,17 @@ def create_settings_dialog():
             server_port_var.set(new_port)
             chunk_size_var.set(new_chunk_size)
             messagebox.showinfo("Success", "Settings updated successfully!")
+            
+            def check_connection(new_ip):
+                loading_dialog = create_loading_screen()
 
+                def async_discovery():
+                    result = start_server_discovery(new_ip)
+                    on_discovery_complete(result, loading_dialog)
+                # Run discovery in a separate thread
+                Thread(target=async_discovery).start()
+
+            check_connection(new_ip)
             dialog.destroy()
         
         except ValueError as e:

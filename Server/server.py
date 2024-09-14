@@ -476,6 +476,7 @@ def restart_server():
 # Function to clear the logs
 def clear_logs():
     log_text.delete('1.0', tk.END)
+    udp_log_text.delete('1.0',tk.END)
 
 def on_closing():
     if server_running:
