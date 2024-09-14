@@ -22,6 +22,18 @@ def setup_udp_logging():
     
     return udp_logger
 
+def get_network_ip():
+    try:
+        # Create a temporary socket to determine the network IP address
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0)
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+    except Exception as e:
+        ip = '0.0.0.0'
+    finally:
+        s.close()
+    return ip
 # UDP broadcast handling
 def handle_udp_broadcast():
     udp_logger = setup_udp_logging()
@@ -30,6 +42,7 @@ def handle_udp_broadcast():
     udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     udp_sock.bind(('', UDP_PORT))
     
+    server_ip = get_network_ip()
     log_message = lambda msg: (udp_logger.info(msg), GUI_LOG_CALLBACK(msg)) if GUI_LOG_CALLBACK else udp_logger.info(msg)
     log_message("📡 UDP broadcast server is running...")
     
@@ -38,7 +51,6 @@ def handle_udp_broadcast():
             udp_sock.settimeout(TIMEOUT)
             message, addr = udp_sock.recvfrom(1024)
             if message.decode() == DISCOVER_MSG:
-                server_ip = socket.gethostbyname(socket.gethostname())
                 udp_sock.sendto(server_ip.encode(), addr)
                 log_message(f"🔍 Discovery from {addr}, responded with {server_ip}")
         except socket.timeout: pass
