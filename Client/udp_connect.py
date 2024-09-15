@@ -23,9 +23,7 @@ def discover_server(ip=None, timeout=TIMEOUT):
         while True:
             try:
                 response, server_address = udp_sock.recvfrom(1024)
-                print(server_address)  # For debugging, remove in production
                 server_ip = response.decode()
-                print(server_ip)  # For debugging, remove in production
                 return {"status": "success", "server_ip": server_ip}
             except socket.timeout:
                 return {"status": "error", "message": "Connection timed out. Please check your network settings."}

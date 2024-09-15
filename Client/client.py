@@ -174,10 +174,10 @@ def on_discovery_complete(result, loading_dialog):
 def start_server_discovery(ip=None):
     try:
         if ip is None:
-            # No IP and port provided, use broadcast discovery
+            # No IP provided, use broadcast discovery
             result = udp_connect.discover_server(timeout=TIMEOUT)
         else:
-            # Use specific IP and port to discover server
+            # Use specific IP to discover server
             result = udp_connect.discover_server(ip, TIMEOUT)
         
         return result
