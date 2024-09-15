@@ -320,75 +320,139 @@ def update_progress(progress, progress_label, speed_label, time_label, total_sen
     time_label['text'] = f"Time Left: {estimated_time // 60:.0f}m {estimated_time % 60:.0f}s"
     root.update_idletasks()
     
+def format_size(size):
+    """Format file size in bytes, KB, MB, GB, etc."""
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if size < 1024.0:
+            return f"{size:.2f} {unit}"
+        size /= 1024.0
+    return f"{size:.2f} PB"
+
+def show_file_metadata(file_paths, callback_on_upload):
+    """Create a confirmation dialog to show file metadata with upload and cancel options."""
+    if not file_paths:
+        return
+
+    if len(file_paths) > 1:
+        zip_file_name = f"{sanitize_filename(roll_no_var.get())}.zip"
+        zip_file_path = os.path.join(BASE_DIR, zip_file_name)
+        zip_files(file_paths, zip_file_path)
+        file_paths = [zip_file_path]
+
+    metadata = []
+    for file in file_paths:
+        name = os.path.basename(file)
+        size = os.path.getsize(file)
+        formatted_size = format_size(size)
+        metadata.append(f"Name: {name}\nSize: {formatted_size}")
+
+    metadata_text = "\n\n".join(metadata)
+
+    def on_upload():
+        dialog.destroy()
+        callback_on_upload()
+
+    def on_cancel():
+        dialog.destroy()
+        
+    dialog_size = {"width":400,"height":250}
+    dialog = Toplevel(root)
+    dialog.title("File Metadata")
+    dialog.geometry(f"{dialog_size['width']}x{dialog_size['height']}")
+    dialog.minsize(dialog_size['width'], dialog_size['height'])
+    set_window_icon(dialog)
+    dialog.transient(root)
+    dialog.grab_set()
+
+    Label(dialog, text="The following file will be uploaded:", font=(FONT, 16)).pack(pady=10)
+    Label(dialog, text=metadata_text, font=(FONT, 14,"bold"), justify='left').pack(pady=10)
+
+    button_frame = ttk.Frame(dialog)
+    button_frame.pack(pady=20)
+
+    upload_button = Button(button_frame, text="Upload", command=on_upload, font=(FONT, 14), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=2, padx=10, pady=5)
+    upload_button.pack(side='left', padx=10)
+    upload_button.bind("<Enter>", lambda e: upload_button.config(bg=BUTTON_HOVER_COLOR))
+    upload_button.bind("<Leave>", lambda e: upload_button.config(bg=BUTTON_COLOR_LIGHT))
+
+    cancel_button = Button(button_frame, text="Cancel", command=on_cancel, font=(FONT, 14), bg=BUTTON_COLOR_DARK, fg=WHITE_COLOR, borderwidth=2, padx=10, pady=5)
+    cancel_button.pack(side='right', padx=10)
+    cancel_button.bind("<Enter>", lambda e: cancel_button.config(bg=BUTTON_HOVER_COLOR))
+    cancel_button.bind("<Leave>", lambda e: cancel_button.config(bg=BUTTON_COLOR_DARK))
+
+    center_window(dialog, dialog_size["width"], dialog_size["height"])
+
 def submit_file(file_path, roll_no):
-    try:
-        dialog, progress, progress_label, speed_label, time_label = create_progress_dialog()
-        def upload_file():
-            try:
-                # Create a socket connection
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                
-                # Try to connect to the server
-                server_ip = server_ip_var.get()
-                server_port = int(server_port_var.get())
-                
+    def start_upload():
+        try:
+            dialog, progress, progress_label, speed_label, time_label = create_progress_dialog()
+            def upload_file():
                 try:
-                    s.connect((server_ip, server_port))
-                except (ConnectionRefusedError, OSError) as e:
-                    messagebox.showerror("Connection Error", f"Could not connect to the server at {server_ip}:{server_port}. Please make sure the server is running. Error: {e}")
+                    # Create a socket connection
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    
+                    # Try to connect to the server
+                    server_ip = server_ip_var.get()
+                    server_port = int(server_port_var.get())
+                    
+                    try:
+                        s.connect((server_ip, server_port))
+                    except (ConnectionRefusedError, OSError) as e:
+                        messagebox.showerror("Connection Error", f"Could not connect to the server at {server_ip}:{server_port}. Please make sure the server is running. Error: {e}")
+                        dialog.destroy()
+                        return
+
+                    # Determine the filename based on the file type
+                    filename = f"{roll_no}.zip" if file_path.endswith('.zip') else f"{roll_no}{os.path.splitext(file_path)[1]}"
+                    file_size = os.path.getsize(file_path)
+
+                    metadata = {
+                        "filename": filename,
+                        "file_size": file_size,
+                    }
+                    metadata_json = json.dumps(metadata)
+
+                    header = f"{metadata_json}\n{DELIMITER}\n"
+                    s.sendall(header.encode())
+
+                    progress['maximum'] = file_size
+                    progress['value'] = 0
+                    total_sent = 0
+                    start_time = time.time()
+
+                    # Open the file from the correct directory
+                    with open(file_path, 'rb') as f:
+                        while True:
+                            data = f.read(int(chunk_size_var.get()))
+                            if not data:
+                                break
+                            try:
+                                s.sendall(data)
+                                total_sent += len(data)
+                                update_progress(progress, progress_label, speed_label, time_label, total_sent, file_size, start_time)
+                            except ConnectionResetError:
+                                messagebox.showerror("Connection Error", "The connection to the server was lost. Please try again.")
+                                return
+
+                    s.shutdown(socket.SHUT_WR)
+                    response = s.recv(1024).decode()
+                    if response == 'ok':
+                        messagebox.showinfo("Success", "File uploaded successfully!")
+                    else:
+                        messagebox.showerror("Error", "Failed to upload file.")         
+                except Exception as e:
+                    messagebox.showerror("Error", f"An error occurred during file upload: {str(e)}")
+                finally:
+                    s.close()
                     dialog.destroy()
-                    return
 
-                # Determine the filename based on the file type
-                filename = f"{roll_no}.zip" if file_path.endswith('.zip') else f"{roll_no}{os.path.splitext(file_path)[1]}"
-                file_size = os.path.getsize(file_path)
+            Thread(target=upload_file).start()
 
-                metadata = {
-                    "filename": filename,
-                    "file_size": file_size,
-                }
-                metadata_json = json.dumps(metadata)
-
-                header = f"{metadata_json}\n{DELIMITER}\n"
-                s.sendall(header.encode())
-
-                progress['maximum'] = file_size
-                progress['value'] = 0
-                total_sent = 0
-                start_time = time.time()
-
-                # Open the file from the correct directory
-                with open(file_path, 'rb') as f:
-                    while True:
-                        data = f.read(int(chunk_size_var.get()))
-                        if not data:
-                            break
-                        try:
-                            s.sendall(data)
-                            total_sent += len(data)
-                            update_progress(progress, progress_label, speed_label, time_label, total_sent, file_size, start_time)
-                        except ConnectionResetError:
-                            messagebox.showerror("Connection Error", "The connection to the server was lost. Please try again.")
-                            return
-
-                s.shutdown(socket.SHUT_WR)
-                response = s.recv(1024).decode()
-                if response == 'ok':
-                    messagebox.showinfo("Success", "File uploaded successfully!")
-                else:
-                    messagebox.showerror("Error", "Failed to upload file.")         
-            except Exception as e:
-                messagebox.showerror("Error", f"An error occurred during file upload: {str(e)}")
-            finally:
-                s.close()
-                dialog.destroy()
-
-        Thread(target=upload_file).start()
-
-    except Exception as e:
-        messagebox.showerror("Error", str(e))
-        update_connection_status("Disconnected:",ERROR_COLOR)
-
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+            update_connection_status("Disconnected:",ERROR_COLOR)
+    # Show metadata dialog and proceed based on user's choice
+    show_file_metadata([file_path], start_upload)
 def create_settings_dialog():
     dialog = Toplevel(root)
     dialog.title("Settings")
