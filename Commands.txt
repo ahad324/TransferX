@@ -14,6 +14,11 @@ ipconfig | findstr /i "ipv4"
 netstat
 arp -a
 
+<======== For SSL ========>
+openssl req -newkey rsa:2048 -nodes -keyout myapp_private.key -out myapp.csr
+openssl x509 -signkey myapp_private.key -in myapp.csr -req -days 365 -out myapp_certificate.crt
+openssl pkcs12 -export -out myapp_certificate.pfx -inkey myapp_private.key -in myapp_certificate.crt
+
 <=========== For signature ==============>
 signtool sign /f myapp_certificate.pfx /p ahad324xv /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 AppName.exe
 
