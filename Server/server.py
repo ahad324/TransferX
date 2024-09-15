@@ -1,4 +1,4 @@
-import socket, sqlite3, re, os, sys, logging, json
+import socket, sqlite3, re, os, sys, logging, json, io
 from pathlib import Path
 from threading import Thread, Event
 import tkinter as tk
@@ -284,14 +284,19 @@ def handle_client(client_socket, log_text, addr):
         log_text.insert(tk.END, f"💾 Saving file to: {file_path}\n")
 
         bytes_received = 0
+        # Open the file using BufferedWriter for efficient writing
         with open(file_path, 'wb') as f:
+            buf = io.BufferedWriter(f, buffer_size=CHUNK_SIZE)
             while bytes_received < file_size:
                 chunk = client_socket.recv(CHUNK_SIZE)
                 if not chunk:
                     break
-                f.write(chunk)
+                buf.write(chunk)
                 bytes_received += len(chunk)
                 data_received_var.set(data_received_var.get() + len(chunk))
+            
+            # Flush the buffer to ensure all data is written to the file
+            buf.flush()
 
         if bytes_received == file_size:
             logger.info(f"✅ File received successfully: {filename}")

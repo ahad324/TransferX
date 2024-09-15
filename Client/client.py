@@ -1,4 +1,4 @@
-import socket, re, time, zipfile, json, sys, os
+import socket, re, time, zipfile, json, sys, os, io
 from tkinter import ttk,Button, filedialog, messagebox, Label, Entry, StringVar, ttk, Toplevel, font, Listbox
 from threading import Thread
 from tkinterdnd2 import DND_FILES, TkinterDnD
@@ -305,11 +305,103 @@ def select_files():
             submit_file(os.path.join(CURRENT_DIR, zip_file_name), roll_no)
         else:
             submit_file(file_paths[0], roll_no)
-def zip_files(file_paths, zip_file_path):
-    with zipfile.ZipFile(zip_file_path, 'w') as zipf:
-        for file in file_paths:
-            zipf.write(file, os.path.basename(file))
 
+def create_zip_progress_dialog(on_cancel):
+    def on_closing():
+        if messagebox.askokcancel("Quit", "Do you want to cancel the zipping process?"):
+            on_cancel()
+            dialog.destroy()
+
+    dialog = Toplevel(root)
+    dialog.title("Zipping Files")
+    dialog.geometry("400x300")
+    set_window_icon(dialog)
+    dialog.transient(root)
+    dialog.grab_set()
+
+    Label(dialog, text="Zipping files...", font=(FONT, 16)).pack(pady=10)
+    progress = ttk.Progressbar(dialog, orient="horizontal", mode="determinate", length=350, style='TProgressbar')
+    progress.pack(pady=15)
+    
+    file_name_label = Label(dialog, text="Current file: ", font=(FONT, 14))
+    file_name_label.pack(pady=5)
+    
+    file_count_label = Label(dialog, text="Files zipped: 0/0", font=(FONT, 14))
+    file_count_label.pack(pady=5)
+    
+    percentage_label = Label(dialog, text="Percentage: 0%", font=(FONT, 14))
+    percentage_label.pack(pady=5)
+
+    cancel_button = Button(dialog, text="Cancel", command=lambda: on_cancel(), font=(FONT, 14), bg=BUTTON_COLOR_DARK, fg=WHITE_COLOR, borderwidth=2, padx=10, pady=5)
+    cancel_button.pack(pady=20)
+    
+    center_window(dialog, 400, 300)
+    
+    # Override the default behavior of the close button
+    dialog.protocol("WM_DELETE_WINDOW", on_closing)
+    return dialog, progress, file_name_label, file_count_label, percentage_label
+
+def zip_files(file_paths, zip_file_path):
+    def on_cancel():
+        nonlocal cancel_requested
+        cancel_requested = True
+        dialog.destroy()
+
+    cancel_requested = False
+    dialog, progress, file_name_label, file_count_label, percentage_label = create_zip_progress_dialog(on_cancel)
+
+    total_files = len(file_paths)
+    zipped_files = 0
+    chunk_size = int(chunk_size_var.get())  # Use global chunk size variable
+    progress['maximum'] = 100  # Progress bar goes from 0 to 100%
+
+    try:
+        with zipfile.ZipFile(zip_file_path, 'w') as zipf:
+            for i, file in enumerate(file_paths):
+                if cancel_requested:
+                    break  # Gracefully exit instead of raising an exception
+
+                file_name_label.config(text=f"Current file: {os.path.basename(file)}")
+                file_count_label.config(text=f"Files zipped: {zipped_files}/{total_files}")
+
+                file_size = os.path.getsize(file)
+                file_sent = 0
+                last_percentage = 0  # To track progress changes
+
+                # Using BufferedReader for optimized file reading
+                with open(file, 'rb') as f:
+                    buf = io.BufferedReader(f, buffer_size=chunk_size)
+                    while not cancel_requested:
+                        chunk = buf.read(chunk_size)
+                        if not chunk:
+                            break  # End of file
+
+                        zipf.writestr(os.path.basename(file), chunk)
+                        file_sent += len(chunk)
+
+                        # Calculate percentage with decimals and update only if it changes
+                        percentage = (file_sent / file_size) * 100
+                        if int(percentage) != last_percentage:  # Update only on percentage change
+                            progress['value'] = percentage
+                            percentage_label.config(text=f"Percentage: {percentage:.2f}%")
+                            root.update_idletasks()
+                            last_percentage = int(percentage)  # Track last percentage
+
+                # Now that the file is fully zipped, update the file count
+                zipped_files += 1
+                file_count_label.config(text=f"Files zipped: {zipped_files}/{total_files}")
+
+    except Exception as e:
+        if cancel_requested:
+            os.remove(zip_file_path)  # Remove the zip file if zipping was cancelled
+            messagebox.showinfo("Cancelled", "Zipping process was cancelled.")
+        else:
+            messagebox.showinfo("Error", f"An error occurred: {str(e)}")
+
+    if not cancel_requested:
+        dialog.destroy()
+        messagebox.showinfo("Complete", "Zipping process completed successfully.")
+   
 def update_progress(progress, progress_label, speed_label, time_label, total_sent, file_size, start_time):
     elapsed_time = time.time() - start_time
     speed = total_sent / elapsed_time if elapsed_time > 0 else 0
@@ -398,8 +490,10 @@ def submit_file(file_path, roll_no):
                     try:
                         s.connect((server_ip, server_port))
                     except (ConnectionRefusedError, OSError) as e:
-                        messagebox.showerror("Connection Error", f"Could not connect to the server at {server_ip}:{server_port}. Please make sure the server is running. Error: {e}")
-                        dialog.destroy()
+                        if dialog.winfo_exists():  # Check if dialog still exists before showing error
+                            messagebox.showerror("Connection Error", f"Could not connect to the server at {server_ip}:{server_port}. Please make sure the server is running. Error: {e}")
+                            dialog.destroy()
+                        s.close()
                         return
 
                     # Determine the filename based on the file type
@@ -422,37 +516,48 @@ def submit_file(file_path, roll_no):
 
                     # Open the file from the correct directory
                     with open(file_path, 'rb') as f:
+                        buf = io.BufferedReader(f, buffer_size=int(chunk_size_var.get()))
                         while True:
-                            data = f.read(int(chunk_size_var.get()))
+                            data = buf.read(int(chunk_size_var.get()))
                             if not data:
                                 break
                             try:
                                 s.sendall(data)
                                 total_sent += len(data)
                                 update_progress(progress, progress_label, speed_label, time_label, total_sent, file_size, start_time)
+                                # Check if dialog is still open
+                                if not dialog.winfo_exists():
+                                    raise Exception("Upload canceled by user")
                             except ConnectionResetError:
-                                messagebox.showerror("Connection Error", "The connection to the server was lost. Please try again.")
+                                if dialog.winfo_exists():
+                                    messagebox.showerror("Connection Error", "The connection to the server was lost. Please try again.")
                                 return
 
                     s.shutdown(socket.SHUT_WR)
                     response = s.recv(1024).decode()
                     if response == 'ok':
-                        messagebox.showinfo("Success", "File uploaded successfully!")
+                        if dialog.winfo_exists():
+                            messagebox.showinfo("Success", "File uploaded successfully!")
                     else:
-                        messagebox.showerror("Error", "Failed to upload file.")         
+                        if dialog.winfo_exists():
+                            messagebox.showerror("Error", "Failed to upload file.")         
                 except Exception as e:
-                    messagebox.showerror("Error", f"An error occurred during file upload: {str(e)}")
+                    if dialog.winfo_exists():
+                        messagebox.showerror("Error", f"An error occurred during file upload: {str(e)}")
                 finally:
+                    if dialog.winfo_exists():
+                        dialog.destroy()
                     s.close()
-                    dialog.destroy()
 
             Thread(target=upload_file).start()
 
         except Exception as e:
-            messagebox.showerror("Error", str(e))
+            if dialog.winfo_exists():
+                messagebox.showerror("Error", str(e))
             update_connection_status("Disconnected:",ERROR_COLOR)
     # Show metadata dialog and proceed based on user's choice
     show_file_metadata([file_path], start_upload)
+
 def create_settings_dialog():
     dialog = Toplevel(root)
     dialog.title("Settings")
