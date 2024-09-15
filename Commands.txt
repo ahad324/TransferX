@@ -13,3 +13,9 @@ ipconfig | findstr /i "ipv4"
 <========= For devices in local Network ==========>
 netstat
 arp -a
+
+<=========== For signature ==============>
+signtool sign /f myapp_certificate.pfx /p ahad324xv /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 AppName.exe
+
+<===== Verify ========>
+signtool verify /pa /v myapp.exe
