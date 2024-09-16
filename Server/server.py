@@ -27,7 +27,7 @@ def ensure_base_dir_exists():
     if not os.path.exists(BUCKET_DIR):
         os.makedirs(BUCKET_DIR, exist_ok=True)
         logger.info(f"📂 Storage directory created: {BUCKET_DIR}")
-        log_text.insert(tk.END, f"📂 Storage directory created: {BUCKET_DIR}\n")
+        append_log(f"📂 Storage directory created: {BUCKET_DIR}")
 
 # Constants
 SERVER_IP = '0.0.0.0'
@@ -53,6 +53,16 @@ def set_window_icon(window):
     current_dir = sys._MEIPASS if getattr(sys, 'frozen', False) else os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
     logo_path = os.path.join(current_dir, 'Logo', 'logo.ico')
     window.iconbitmap(logo_path)
+
+# Functions to append text to UDP and Logs
+def append_udp_log(message):
+    def update_log():
+        udp_log_text.insert(tk.END, message + "\n")
+        udp_log_text.yview(tk.END)
+    root.after(0, update_log)
+def append_log(message):
+    log_text.insert(tk.END,message+"\n")
+    log_text.yview(tk.END)
     
 # Initialize the Tkinter root window
 root = tk.Tk()
@@ -97,13 +107,17 @@ notebook.add(settings_frame, text="Settings")
 
 # Create and pack the log text area
 log_text = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD,bg=LIGHT_BG_COLOR,height=20,font=("Courier",10))
-log_text.pack(pady=20, fill=tk.BOTH, expand=True)
-log_text.insert(tk.END, "CLICK ON THE START SERVER BUTTON...\n")
+log_text.grid(row=0, column=0, sticky='nsew')
+log_frame.grid_rowconfigure(0, weight=1)
+log_frame.grid_columnconfigure(0, weight=1)
+append_log("CLICK ON THE START SERVER BUTTON...")
 
 # Create and pack the UDP log text area
 udp_log_text = scrolledtext.ScrolledText(udp_log_frame, wrap=tk.WORD, bg=LIGHT_BG_COLOR, height=20, font=("Courier", 10))
-udp_log_text.pack(pady=20, fill=tk.BOTH, expand=True)
-udp_log_text.insert(tk.END, "UDP Connection logs will appear here...\n")
+udp_log_text.grid(row=0, column=0, sticky='nsew')
+udp_log_frame.grid_rowconfigure(0, weight=1)
+udp_log_frame.grid_columnconfigure(0, weight=1)
+append_udp_log("UDP Connection logs will appear here...")
 
 # Status frame content
 status_frame.grid_columnconfigure(0, weight=1)
@@ -164,14 +178,7 @@ restart_button.pack(side=tk.LEFT, padx=20)
 
 clear_button = tk.Button(button_frame, text="Clear Logs", command=lambda: clear_logs(), height=2, width=10)
 clear_button.pack(side=tk.LEFT, padx=20)
-
-# Function to append text to UDP log
-def append_udp_log(message):
-    def update_log():
-        udp_log_text.insert(tk.END, message + "\n")
-        udp_log_text.yview(tk.END)
-    root.after(0, update_log)
-    
+        
 # Setup logging configuration
 def setup_logging():
     global logger
@@ -220,7 +227,6 @@ def is_valid_chunk_size(size):
 
 # Database initialization
 def init_db():
-    """Initializes the SQLite database."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('''CREATE TABLE IF NOT EXISTS files (
@@ -235,7 +241,6 @@ def init_db():
     
 # Function to log file to database
 def log_file_to_db(filename, file_size, saved_path):
-    """Logs file metadata to the database."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("INSERT INTO files (filename, file_size, saved_path) VALUES (?, ?, ?)",
@@ -251,22 +256,29 @@ def sanitize_filename(filename):
 def handle_client(client_socket, log_text, addr):
     global file_count_var, data_received_var
 
+    def receive_until_delimiter(delimiter):
+        data = b''
+        while delimiter.encode() not in data:
+            chunk = client_socket.recv(CHUNK_SIZE)
+            if not chunk:
+                break
+            data += chunk
+        return data
+    
+    def get_unique_filename(file_path):
+        base, extension = os.path.splitext(file_path)
+        counter = 1
+        new_file_path = file_path
+        while os.path.exists(new_file_path):
+            new_file_path = f"{base}({counter}){extension}"
+            counter += 1
+        return new_file_path
     try:
-        # Receives data until the specified delimiter is found.
-        def receive_until_delimiter(delimiter):
-            data = b''
-            while delimiter.encode() not in data:
-                chunk = client_socket.recv(CHUNK_SIZE)
-                if not chunk:
-                    break
-                data += chunk
-            return data
-
         # Receive header data
         header_data = receive_until_delimiter(DELIMITER).decode()
         if not header_data:
             logger.error(f"{'❌' * 10} Header data not received correctly.")
-            log_text.insert(tk.END, f"{'❌' * 10} Header data not received correctly.\n")
+            append_log(f"{'❌' * 10} Header data not received correctly.")
             client_socket.sendall(b'error')  # Send error response
             return
         
@@ -280,9 +292,10 @@ def handle_client(client_socket, log_text, addr):
             ensure_base_dir_exists()
 
         file_path = os.path.join(BUCKET_DIR, sanitize_filename(filename))
+        file_path = get_unique_filename(file_path)  # Ensure unique filename
         logger.info(f"💾 Saving file to: {file_path}")
-        log_text.insert(tk.END, f"💾 Saving file to: {file_path}\n")
-
+        append_log(f"💾 Saving file to: {file_path}")
+        
         bytes_received = 0
         # Open the file using BufferedWriter for efficient writing
         with open(file_path, 'wb') as f:
@@ -300,24 +313,24 @@ def handle_client(client_socket, log_text, addr):
 
         if bytes_received == file_size:
             logger.info(f"✅ File received successfully: {filename}")
-            log_text.insert(tk.END, f"✅ File received successfully: {filename}\n")
+            append_log(f"✅ File received successfully: {filename}")
             file_count_var.set(file_count_var.get() + 1)
             log_file_to_db(filename, file_size, file_path)
             client_socket.sendall(b'ok')  # Send success response
         else:
             logger.error(f"{'⚠️' * 5} File transfer incomplete: {filename}")
-            log_text.insert(tk.END, f"{'⚠️' * 5} File transfer incomplete: {filename}\n")
+            append_log(f"{'⚠️' * 5} File transfer incomplete: {filename}")
             client_socket.sendall(b'error')
 
     except Exception as e:
         logger.error(f"{'❗' * 5} Error handling client: {e}")
-        log_text.insert(tk.END, f"{'❗' * 5} Error handling client: {e}\n")
+        append_log(f"{'❗' * 5} Error handling client: {e}")
         client_socket.sendall(b'error')
     finally:
         client_socket.close()
         connections.remove(client_socket)
         logger.info(f"✅ Connection with {addr} is clossed!\n")
-        log_text.insert(tk.END, f"✅ Connection with {addr} is clossed!\n")
+        append_log(f"✅ Connection with {addr} is clossed!")
         connection_count_var.set(len(connections))
 
 # Function to log the session summar from start to stop of server
@@ -336,10 +349,7 @@ def log_session_summary():
 
     # Log the session summary
     logger.info(session_table)
-
-    # Insert into the tkinter log text box
-    log_text.insert(tk.END, session_table + "\n")
-    log_text.yview(tk.END)
+    append_log(session_table)
 
 # Function to Log Settings when settings applied
 def log_settings_summary(ip, port, chunk_size, bucket_dir):
@@ -356,8 +366,7 @@ def log_settings_summary(ip, port, chunk_size, bucket_dir):
     )
 
     logger.info(settings_table)
-    log_text.insert(tk.END, settings_table + "\n")
-    log_text.yview(tk.END)
+    append_log(settings_table)
     
 # Function to Log a separator for better UI
 def log_separator(context):
@@ -365,8 +374,7 @@ def log_separator(context):
         f"\n🟡 <{'-' * 25} {context} {'-' * 25}> 🟡\n"
     )
     logger.info(separator)
-    log_text.insert(tk.END, separator)
-    log_text.yview(tk.END)
+    append_log(separator)
 
 # Function to start the server
 def start_server():
@@ -400,21 +408,21 @@ def start_server():
 
             Thread(target=accept_connections, daemon=True).start()
             logger.info(f"|{'=' * 20 } 📡 Server started on {ip}:{port} {'=' * 20 }|")
-            log_text.insert(tk.END, f"|{'=' * 20 } 📡 Server started on {ip}:{port} {'=' * 20 }|\n")
+            append_log(f"|{'=' * 20 } 📡 Server started on {ip}:{port} {'=' * 20 }|")
             # Start the UDP listener
             udp_connect.start_udp_listener(BASE_DIR, append_udp_log)
             
         except socket.error as e:
             if e.errno == 10048:
                 logger.error(f"⚠️ Port {port} is already in use.")
-                log_text.insert(tk.END, f"⚠️ Port {port} is already in use.\n")
+                append_log( f"⚠️ Port {port} is already in use.")
                 messagebox.showerror("⚠️ Port Error", f"Port {port} is already in use.")
             else:
                 logger.error(f"❌ Failed to start server: {e}")
-                log_text.insert(tk.END, f"❌ Failed to start server: {e}\n")
+                append_log(f"❌ Failed to start server: {e}")
     else:
         logger.warning(f"⚠️ Server is already running.")
-        log_text.insert(tk.END, f"⚠️ Server is already running.\n")
+        append_log(f"⚠️ Server is already running.")
 
 # Function for accepting the clients connections
 def accept_connections():
@@ -423,13 +431,13 @@ def accept_connections():
             client_socket, addr = server_socket.accept()
             connections.append(client_socket)
             connection_count_var.set(len(connections))
-            logger.info(f"{' ' * 5}> 🔗 Accepted connection from {addr}")
-            log_text.insert(tk.END, f"{' ' * 5}> 🔗 Accepted connection from {addr}\n")
+            logger.info(f"{'  ' * 5} 🔗 Accepted connection from {addr}")
+            append_log(f"{'  ' * 5} 🔗 Accepted connection from {addr}")
             Thread(target=handle_client, args=(client_socket, log_text, addr), daemon=True).start()
         except Exception as e:
             if not stop_event.is_set():
                 logger.error(f"❌ Error accepting connections: {e}")
-                log_text.insert(tk.END, f"❌ Error accepting connections: {e}\n")
+                append_log(f"❌ Error accepting connections: {e}")
             break
 
 # Function to stop the server
@@ -464,17 +472,16 @@ def check_server_stopped():
             server_socket.close()
             server_socket = None
         logger.info("🛑 Server stopped.")
-        log_text.insert(tk.END, "🛑  Server stopped.\n")
+        append_log("🛑  Server stopped.")
         log_session_summary()
     except Exception as e:
         logger.error(f"❌ Error stopping the server: {e}")
-        log_text.insert(tk.END, f"❌ Error stopping the server: {e}\n")
+        append_log(f"❌ Error stopping the server: {e}")
 
 # Function to restart the server
 def restart_server():
     log_separator("Server Restart")
-    log_text.insert(tk.END, "🔄 Restarting the server...\n")
-    log_text.yview(tk.END)
+    append_log("🔄 Restarting the server...")
     stop_server()
     root.after(1000, start_server)
     
