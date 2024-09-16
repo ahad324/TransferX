@@ -8,7 +8,7 @@ import io
 import re
 from pathlib import Path
 from threading import Thread
-from tkinter import ttk, Button, filedialog, messagebox, Label, Entry, StringVar, Toplevel, font, Listbox
+from tkinter import Frame, ttk, Button, filedialog, messagebox, Label, Entry, StringVar, Toplevel, font, Listbox
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 import udp_connect
@@ -26,13 +26,14 @@ TIMEOUT = 10
 WHITE_COLOR = 'white'
 BLACK_COLOR = 'black'
 BG_COLOR_LIGHT = '#F0F2F5'
-BG_COLOR_DARK = '#343A40'
+BG_COLOR_DARK = '#161718'
 BUTTON_COLOR_LIGHT = '#007BFF'
 BUTTON_COLOR_DARK = '#0056b3'
 ENTRY_BG_COLOR = WHITE_COLOR
 ENTRY_FG_COLOR = '#212529'
 PROGRESSBAR_COLOR = '#28A745'
 BUTTON_HOVER_COLOR = '#0056b3'
+DRAG_HOVER_COLOR = "#D3E3FF"
 ERROR_COLOR = "red"
 SUCCESS_COLOR = "green"
 
@@ -100,6 +101,13 @@ class ThemeManager:
         else:
             self.set_light_theme()
             self.theme = 'light'
+            
+    # Method to update specific frame background
+    def update_frame_background(self, frame):
+        if self.theme == 'light':
+            frame.config(bg=BG_COLOR_LIGHT)
+        else:
+            frame.config(bg=BG_COLOR_DARK)
 
 # GUI Creation Functions
 def create_loading_screen():
@@ -503,8 +511,9 @@ def show_file_metadata(file_paths, callback_on_upload):
     Label(dialog, text="The following file will be uploaded:", font=(FONT, 16)).pack(pady=10)
     Label(dialog, text=metadata_text, font=(FONT, 14,"bold"), justify='left').pack(pady=10)
 
-    button_frame = ttk.Frame(dialog)
+    button_frame = Frame(dialog, bg=BG_COLOR_LIGHT)
     button_frame.pack(pady=20)
+    theme_manager.update_frame_background(button_frame)
 
     upload_button = Button(button_frame, text="Upload", command=on_upload, font=(FONT, 14), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=2, padx=10, pady=5)
     upload_button.pack(side='left', padx=10)
@@ -515,6 +524,7 @@ def show_file_metadata(file_paths, callback_on_upload):
     cancel_button.pack(side='right', padx=10)
     cancel_button.bind("<Enter>", lambda e: cancel_button.config(bg=BUTTON_HOVER_COLOR))
     cancel_button.bind("<Leave>", lambda e: cancel_button.config(bg=BUTTON_COLOR_DARK))
+
 
     center_window(dialog, dialog_size["width"], dialog_size["height"])
 
@@ -609,6 +619,7 @@ style.configure('TLabel', font=(FONT, 16), padding=10)
 style.configure('TEntry', font=(FONT, 18), padding=10, relief='raised')
 style.configure('TProgressbar', thickness=30, troughcolor='#D3D3D3')
 
+
 status_frame = ttk.Frame(root)
 status_frame.pack(side='bottom', anchor='sw', padx=5, pady=5, fill='x')
 static_status_label = Label(status_frame, text="Server Connection Status:", font=(FONT, 16, "bold"), fg=BLACK_COLOR, anchor='w')
@@ -647,6 +658,8 @@ instructions.pack(pady=20)
 
 root.drop_target_register(DND_FILES)
 root.dnd_bind('<<Drop>>', on_drop)
+root.dnd_bind('<<DragEnter>>', lambda e: root.config(bg=DRAG_HOVER_COLOR))
+root.dnd_bind('<<DragLeave>>', lambda e: root.config(bg=BG_COLOR_LIGHT))
 
 select_button = Button(root, text="Select Files", command=lambda: Thread(target=select_files).start(), font=(FONT, 14), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=2, padx=15, pady=10)
 select_button.pack(pady=30)
