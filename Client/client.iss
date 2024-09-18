@@ -1,10 +1,10 @@
 [Setup]
 AppName=TransferX
-AppVersion=1.5
+AppVersion=0.0.5
 DefaultDirName={pf}\TransferX
 DefaultGroupName=TransferX
 OutputDir=.\App
-OutputBaseFilename=TransferX
+OutputBaseFilename=TransferX-v0.0.5
 Compression=lzma
 SolidCompression=yes
 SetupIconFile=..\Logo\AppIcon.ico
@@ -21,3 +21,23 @@ Name: "{userdesktop}\TransferX"; Filename: "{app}\TransferX.exe"; IconFilename: 
 
 [Run]
 Filename: "{app}\TransferX.exe"; Description: "Launch TransferX"; Flags: nowait postinstall skipifsilent
+
+[Code]
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  OldFilePath, NewFilePath: string;
+begin
+  if CurStep = ssInstall then
+  begin
+    OldFilePath := ExpandConstant('{app}\TransferX.exe');
+    NewFilePath := ExpandConstant('{app}\TransferX_old.exe');
+    if FileExists(OldFilePath) then
+    begin
+      FileCopy(OldFilePath, NewFilePath, False);
+      DeleteFile(OldFilePath);
+    end;
+  end;
+end;
+
+[UninstallDelete]
+Type: files; Name: "{app}\TransferX_old.exe"

@@ -5,11 +5,11 @@ import os
 iconpath = '../Logo/logo.ico'
 
 a = Analysis(
-    ['server.py', 'udp_connect.py'],  # Include udp_connect.py
+    ['server.py', 'udp_connect.py','updater.py'],  # Include udp_connect.py
     pathex=[os.path.dirname(os.path.abspath(__name__))],
     binaries=[],
     datas=[(iconpath, 'Logo')],  # Include logo
-    hiddenimports=[],  # Add any hidden imports required
+    hiddenimports=['requests'],  # Add any hidden imports required
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -26,7 +26,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='TransferX Server',
+    name='TransferXServer',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

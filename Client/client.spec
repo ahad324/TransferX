@@ -8,11 +8,11 @@ venv_site_packages = os.path.join('myenv', 'Lib', 'site-packages')
 iconpath = '../Logo/logo.ico'
 
 a = Analysis(
-    ['client.py', 'udp_connect.py'],  # Include udp_connect.py
+    ['client.py', 'udp_connect.py','updater.py'],  # Include udp_connect.py
     pathex=[os.path.dirname(os.path.abspath(__name__))],
     binaries=[],
     datas=collect_data_files('tkinterdnd2') + [(iconpath, 'Logo')],  # Include logo
-    hiddenimports=['tkinterdnd2'],
+    hiddenimports=['tkinterdnd2','requests'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

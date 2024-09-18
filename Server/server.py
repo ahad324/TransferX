@@ -3,7 +3,9 @@ from pathlib import Path
 from threading import Thread, Event
 import tkinter as tk
 from tkinter import scrolledtext, messagebox, ttk, font
+
 import udp_connect
+import updater
 # Determine the user's Downloads folder path
 def get_downloads_folder():
     if sys.platform == "win32":
@@ -538,5 +540,6 @@ ensure_base_dir_exists()
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
 
+updater.check_updates_async()
 # Run the Tkinter main loop
 root.mainloop()

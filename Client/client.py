@@ -12,6 +12,7 @@ from tkinter import Frame, ttk, Button, filedialog, messagebox, Label, Entry, St
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 import udp_connect
+import updater
 
 # Constants
 DEFAULT_SERVER_IP = '192.168.1.102'
@@ -675,4 +676,5 @@ def start_app():
     root.mainloop()
 # Main Execution
 if __name__ == '__main__':
+    updater.check_updates_async()
     start_app()

@@ -1,0 +1,10 @@
+{
+  "client": {
+    "version": "0.0.5",
+    "url": "https://github.com/yourusername/yourrepo/releases/download/v0.0.5/TransferX-v0.0.5.exe"
+  },
+  "server": {
+    "version": "0.0.5",
+    "url": "https://github.com/yourusername/yourrepo/releases/download/v0.0.5/TransferXServer-v0.0.5.exe"
+  }
+}
