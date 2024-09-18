@@ -11,7 +11,7 @@ import tkinter as tk
 from tkinter import messagebox, Label
 
 GITHUB_API_URL = "https://transferx.netlify.app/version.json"
-CURRENT_VERSION = "0.0.5"
+CURRENT_VERSION = "0.0.6"
 APP_NAME = "TransferX"
 # Global variables for update status
 update_status_label = None
