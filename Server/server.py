@@ -2,7 +2,7 @@ import socket, sqlite3, re, os, sys, logging, json, io
 from pathlib import Path
 from threading import Thread, Event
 import tkinter as tk
-from tkinter import scrolledtext, messagebox, ttk, font
+from tkinter import scrolledtext, messagebox, ttk, font, Label
 
 import udp_connect
 import updater
@@ -260,13 +260,13 @@ def handle_client(client_socket, log_text, addr):
 
     def receive_until_delimiter(delimiter):
         data = b''
-        while delimiter.encode() not in data:
+        while delimiter.encode('utf-8') not in data:
             chunk = client_socket.recv(CHUNK_SIZE)
             if not chunk:
                 break
             data += chunk
         return data
-    
+
     def get_unique_filename(file_path):
         base, extension = os.path.splitext(file_path)
         counter = 1
@@ -275,19 +275,42 @@ def handle_client(client_socket, log_text, addr):
             new_file_path = f"{base}({counter}){extension}"
             counter += 1
         return new_file_path
+
     try:
         # Receive header data
-        header_data = receive_until_delimiter(DELIMITER).decode()
+        header_data = receive_until_delimiter(DELIMITER)
         if not header_data:
             logger.error(f"{'❌' * 10} Header data not received correctly.")
             append_log(f"{'❌' * 10} Header data not received correctly.")
             client_socket.sendall(b'error')  # Send error response
             return
-        
+
+        # Try to decode header data with different encodings
+        encodings = ['utf-8', 'iso-8859-1', 'windows-1252']
+        header_str = None
+        for encoding in encodings:
+            try:
+                header_str = header_data.decode(encoding)
+                break
+            except UnicodeDecodeError:
+                continue
+
+        if header_str is None:
+            logger.error(f"{'❌' * 10} Unable to decode header data.")
+            append_log(f"{'❌' * 10} Unable to decode header data.")
+            client_socket.sendall(b'error')  # Send error response
+            return
+
         # Process metadata
-        metadata = json.loads(header_data.split('\n', 1)[0])
-        filename = sanitize_filename(metadata["filename"])
-        file_size = metadata["file_size"]
+        try:
+            metadata = json.loads(header_str.split('\n', 1)[0])
+            filename = sanitize_filename(metadata["filename"])
+            file_size = metadata["file_size"]
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.error(f"{'❌' * 10} Error processing metadata: {e}")
+            append_log(f"{'❌' * 10} Error processing metadata: {e}")
+            client_socket.sendall(b'error')  # Send error response
+            return
 
         # Ensure the bucket directory exists
         if not os.path.exists(BUCKET_DIR):
@@ -325,16 +348,15 @@ def handle_client(client_socket, log_text, addr):
             client_socket.sendall(b'error')
 
     except Exception as e:
-        logger.error(f"{'❗' * 5} Error handling client: {e}")
-        append_log(f"{'❗' * 5} Error handling client: {e}")
+        logger.error(f"{'❗' * 5} Error handling client: {str(e)}")
+        append_log(f"{'❗' * 5} Error handling client: {str(e)}")
         client_socket.sendall(b'error')
     finally:
         client_socket.close()
         connections.remove(client_socket)
-        logger.info(f"✅ Connection with {addr} is clossed!\n")
-        append_log(f"✅ Connection with {addr} is clossed!")
+        logger.info(f"✅ Connection with {addr} is closed!")
+        append_log(f"✅ Connection with {addr} is closed!")
         connection_count_var.set(len(connections))
-
 # Function to log the session summar from start to stop of server
 def log_session_summary():
     session_table = (
@@ -539,7 +561,9 @@ init_db()
 ensure_base_dir_exists()
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
-
+# Updater Label
+updater.update_status_label = Label(root, text="", font=(FONT, 12))
+updater.update_status_label.pack(pady=10)
 updater.check_updates_async()
 # Run the Tkinter main loop
 root.mainloop()

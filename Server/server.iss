@@ -1,10 +1,10 @@
 [Setup]
 AppName=TransferX Server
-AppVersion=0.0.5
+AppVersion=0.0.6
 DefaultDirName={pf}\TransferX Server
 DefaultGroupName=TransferX Server
 OutputDir=.\App
-OutputBaseFilename=TransferXServer-v0.0.5
+OutputBaseFilename=TransferXServer-v0.0.6
 Compression=lzma
 SolidCompression=yes
 SetupIconFile=..\Logo\AppIcon.ico

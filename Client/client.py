@@ -13,6 +13,7 @@ from tkinterdnd2 import DND_FILES, TkinterDnD
 
 import udp_connect
 import updater
+from developer_label import create_developer_label
 
 # Constants
 DEFAULT_SERVER_IP = '192.168.1.102'
@@ -74,9 +75,10 @@ def format_size(size):
     return f"{size:.2f} PB"
 
 class ThemeManager:
-    def __init__(self, root):
+    def __init__(self, root, developer_label):
         self.root = root
-        self.theme = 'light'  # Initialize theme state
+        self.theme = 'light'
+        self.developer_label = developer_label
 
     def set_light_theme(self):
         self.root.tk_setPalette(background=BG_COLOR_LIGHT, foreground=BLACK_COLOR)
@@ -85,6 +87,7 @@ class ThemeManager:
         style.configure('TEntry', background=ENTRY_BG_COLOR, foreground=ENTRY_FG_COLOR)
         style.configure('TProgressbar', background=PROGRESSBAR_COLOR, troughcolor='#D3D3D3')
         static_status_label.config(fg=BLACK_COLOR)
+        self.developer_label.update_theme('light')
 
     def set_dark_theme(self):
         self.root.tk_setPalette(background=BG_COLOR_DARK, foreground=WHITE_COLOR)
@@ -94,6 +97,7 @@ class ThemeManager:
         style.configure('TProgressbar', background=BUTTON_COLOR_DARK, troughcolor='#3C3C3C')
         static_status_label.config(fg=WHITE_COLOR)
         roll_no_entry.config(fg=WHITE_COLOR)
+        self.developer_label.update_theme('dark')
 
     def toggle_theme(self):
         if self.theme == 'light':
@@ -102,6 +106,7 @@ class ThemeManager:
         else:
             self.set_light_theme()
             self.theme = 'light'
+        self.root.update_idletasks()
             
     # Method to update specific frame background
     def update_frame_background(self, frame):
@@ -605,8 +610,15 @@ root.geometry(f"{root_windows_size['width']}x{root_windows_size['height']}")
 root.minsize(300, 300)
 set_window_icon(root)
 root.option_add("*Font", font.Font(family=FONT))
+developer_label = create_developer_label(
+    root,
+    FONT,
+    light_theme={'bg': BG_COLOR_LIGHT, 'fg': BLACK_COLOR},
+    dark_theme={'bg': BG_COLOR_DARK, 'fg': WHITE_COLOR}
+)
+
 # Create an instance of ThemeManager
-theme_manager = ThemeManager(root)
+theme_manager = ThemeManager(root, developer_label)
 
 server_ip_var = StringVar(value=DEFAULT_SERVER_IP)
 server_port_var = StringVar(value=DEFAULT_SERVER_PORT)
@@ -666,6 +678,9 @@ select_button = Button(root, text="Select Files", command=lambda: Thread(target=
 select_button.pack(pady=30)
 select_button.bind("<Enter>", lambda e: select_button.config(bg=BUTTON_HOVER_COLOR))
 select_button.bind("<Leave>", lambda e: select_button.config(bg=BUTTON_COLOR_LIGHT))
+# For Updates status
+updater.update_status_label = Label(root, text="", font=(FONT, 12), fg=BLACK_COLOR)
+updater.update_status_label.pack(pady=10)
 
 settings_button = Button(root, text="⚙️ Settings", command=open_settings, font=(FONT, 12), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=0, padx=10, pady=5)
 settings_button.place(relx=1.0, rely=0.0, anchor='ne', x=-120)
@@ -673,6 +688,7 @@ settings_button.bind("<Enter>", lambda e: settings_button.config(bg=BUTTON_HOVER
 settings_button.bind("<Leave>", lambda e: settings_button.config(bg=BUTTON_COLOR_LIGHT))
 
 def start_app():
+    theme_manager.set_light_theme()
     root.mainloop()
 # Main Execution
 if __name__ == '__main__':

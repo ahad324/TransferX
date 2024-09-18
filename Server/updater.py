@@ -8,11 +8,14 @@ import base64
 from packaging import version
 import socket
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, Label
 
 GITHUB_API_URL = "https://transferx.netlify.app/version.json"
 CURRENT_VERSION = "0.0.5"
 APP_NAME = "TransferXServer"
+# Global variables for update status
+update_status_label = None
+update_in_progress = False
 
 def is_connected():
     try:
@@ -40,29 +43,46 @@ def check_for_updates():
     except Exception as e:
         print(f"Error checking for updates: {e}")
         return None
-
+    
+def set_update_status(message):
+    global update_status_label
+    if update_status_label and update_status_label.winfo_exists():
+        update_status_label.config(text=message)
+        
 def download_update(url):
     try:
         with requests.get(url, stream=True, timeout=30) as response:
             response.raise_for_status()
             update_file = f"{APP_NAME}_update.exe"
+            total_size = int(response.headers.get('content-length', 0))
+            block_size = 8192
+            downloaded = 0
+            
             with open(update_file, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
+                for chunk in response.iter_content(chunk_size=block_size):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        percentage = (downloaded / total_size) * 100
+                        set_update_status(f"Downloading update... {percentage:.1f}%")
+        
+        set_update_status("Download complete. Preparing to install...")
         return update_file
     except requests.RequestException as e:
-        print(f"Error downloading update: {e}")
+        set_update_status(f"Error downloading update: {e}")
         return None
 
 def apply_update(update_file):
     if getattr(sys, 'frozen', False):
         try:
+            set_update_status("Installing update...")
             subprocess.Popen([update_file, "/SILENT", "/CLOSEAPPLICATIONS"])
+            set_update_status("Update installed. Restarting application...")
             sys.exit()
         except subprocess.SubprocessError as e:
-            print(f"Error applying update: {e}")
+            set_update_status(f"Error applying update: {e}")
     else:
-        print("Update downloaded. Please run the new executable to update.")
+        set_update_status("Update downloaded. Please run the new executable to update.")
 
 def show_update_notification(version):
     root = tk.Tk()
@@ -73,15 +93,20 @@ def show_update_notification(version):
     messagebox.showinfo("Update Available", message)
 
 def update_app():
+    global update_in_progress
+    if update_in_progress:
+        return
+    
+    update_in_progress = True
     update_info = check_for_updates()
     if update_info:
-        show_update_notification(update_info['version'])
-        print(f"New version {update_info['version']} available. Downloading...")
+        set_update_status(f"New version {update_info['version']} available.")
         update_file = download_update(update_info['url'])
         if update_file:
-            print("Update downloaded. Applying update...")
             apply_update(update_file)
-    # If no update is available, the function silently exits
+    else:
+        set_update_status("No updates available.")
+    update_in_progress = False
 
 def check_updates_async():
     threading.Thread(target=update_app, daemon=True).start()
