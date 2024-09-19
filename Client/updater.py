@@ -3,7 +3,6 @@ import requests
 import json
 import os
 import sys
-import hashlib
 import subprocess
 import threading
 from packaging import version
@@ -14,7 +13,6 @@ UPDATE_URL = "https://raw.githubusercontent.com/ahad324/TransferX/main/version.j
 CURRENT_VERSION = "0.0.7"
 APP_NAME = "TransferX"
 update_status_label = None
-
 
 def is_connected():
     try:
@@ -42,7 +40,7 @@ def set_update_status(message):
     if update_status_label and update_status_label.winfo_exists():
         update_status_label.config(text=message)
 
-def download_update(url, update_info):
+def download_update(url):
     try:
         with requests.get(url, stream=True, timeout=30) as response:
             response.raise_for_status()
@@ -57,26 +55,11 @@ def download_update(url, update_info):
                         downloaded += len(chunk)
                         percentage = (downloaded / total_size) * 100
                         set_update_status(f"Downloading update... {percentage:.1f}%")
-        set_update_status("Download complete. Verifying...")
-        if verify_checksum(update_file, update_info.get('checksum')):
-            set_update_status("Verification successful. Preparing to install...")
-            return update_file
-        else:
-            set_update_status("Verification failed. Update cancelled.")
-            os.remove(update_file)
-            return None
+        set_update_status("Download complete. Preparing to install...")
+        return update_file
     except requests.RequestException as e:
         set_update_status(f"Error downloading update: {e}")
         return None
-
-def verify_checksum(file_path, expected_checksum):
-    if not expected_checksum:
-        return True  # Skip verification if no checksum provided
-    sha256_hash = hashlib.sha256()
-    with open(file_path, "rb") as f:
-        for byte_block in iter(lambda: f.read(4096), b""):
-            sha256_hash.update(byte_block)
-    return sha256_hash.hexdigest() == expected_checksum
 
 def apply_update(update_file):
     if getattr(sys, 'frozen', False):
@@ -126,7 +109,7 @@ def update_app():
     if update_info:
         set_update_status(f"New version {update_info['version']} available.")
         show_update_notification(update_info['version'])
-        update_file = download_update(update_info['url'], update_info)
+        update_file = download_update(update_info['url'])
         if update_file:
             apply_update(update_file)
     else:

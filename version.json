@@ -1,12 +1,10 @@
 {
   "client": {
     "version": "0.0.7",
-    "url": "https://github.com/ahad324/TransferX/releases/download/v0.0.7/TransferX-v0.0.7.exe",
-    "checksum": "93e30643ed543b1a8aaa93426cb91132c967ba0ad0097999cc02d0eb88581872"
+    "url": "https://github.com/ahad324/TransferX/releases/download/v0.0.7/TransferX-v0.0.7.exe"
   },
   "server": {
     "version": "0.0.7",
-    "url": "https://github.com/ahad324/TransferX/releases/download/v0.0.7/TransferXServer-v0.0.7.exe",
-    "checksum": "860551f4898fdde1ccbaa1c08b925ac599a182bc233f565b7cec8463ef58ac4f"
+    "url": "https://github.com/ahad324/TransferX/releases/download/v0.0.7/TransferXServer-v0.0.7.exe"
   }
 }

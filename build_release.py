@@ -32,30 +32,16 @@ def create_inno_setup(iss_file, name):
     print(f"Creating Inno Setup installer for {name}...")
     output = run_command(f'"{INNO_SETUP_COMPILER}" {iss_file}')
 
-def calculate_checksum(file_path):
-    try:
-        sha256_hash = hashlib.sha256()
-        with open(file_path, "rb") as f:
-            for byte_block in iter(lambda: f.read(4096), b""):
-                sha256_hash.update(byte_block)
-        return sha256_hash.hexdigest()
-    except IOError as e:
-        print(f"Error calculating checksum for file: {file_path}")
-        print(f"Error: {str(e)}")
-        sys.exit(1)
-
-def update_version_json(client_checksum, server_checksum):
+def update_version_json():
     try:
         version_data = {
             "client": {
                 "version": VERSION,
-                "url": f"https://github.com/ahad324/TransferX/releases/download/v{VERSION}/{CLIENT_NAME}-v{VERSION}.exe",
-                "checksum": client_checksum
+                "url": f"https://github.com/ahad324/TransferX/releases/download/v{VERSION}/{CLIENT_NAME}-v{VERSION}.exe"
             },
             "server": {
                 "version": VERSION,
-                "url": f"https://github.com/ahad324/TransferX/releases/download/v{VERSION}/{SERVER_NAME}-v{VERSION}.exe",
-                "checksum": server_checksum
+                "url": f"https://github.com/ahad324/TransferX/releases/download/v{VERSION}/{SERVER_NAME}-v{VERSION}.exe"
             }
         }
         with open("version.json", "w") as f:
@@ -142,7 +128,6 @@ def main():
         create_inno_setup("Client/client.iss", CLIENT_NAME)
         create_inno_setup("Server/server.iss", SERVER_NAME)
 
-        # Calculate checksums
         client_installer = f"Client/App/{CLIENT_NAME}-v{VERSION}.exe"
         server_installer = f"Server/App/{SERVER_NAME}-v{VERSION}.exe"
 
@@ -155,15 +140,10 @@ def main():
         if not os.path.exists(server_installer):
             raise FileNotFoundError(f"Server installer not found: {server_installer}")
 
-        client_checksum = calculate_checksum(client_installer)
-        server_checksum = calculate_checksum(server_installer)
-
         # Update version.json
-        update_version_json(client_checksum, server_checksum)
+        update_version_json()
 
         print("Build process completed successfully!")
-        print(f"Client checksum: {client_checksum}")
-        print(f"Server checksum: {server_checksum}")
         print("Don't forget to update the version.json file on your server!")
     except FileNotFoundError as e:
         print(f"File not found error: {str(e)}")
