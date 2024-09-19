@@ -562,8 +562,8 @@ ensure_base_dir_exists()
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
 # Updater Label
-updater.update_status_label = Label(root, text="", font=(FONT, 12))
-updater.update_status_label.pack(pady=10)
+updater.update_status_label = Label(root, text=f"Version {updater.CURRENT_VERSION}", font=(FONT, 12))
+updater.update_status_label.pack(pady=5)
 updater.check_updates_async()
 # Run the Tkinter main loop
 root.mainloop()

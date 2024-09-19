@@ -21,23 +21,3 @@ Name: "{userdesktop}\TransferX Server"; Filename: "{app}\TransferXServer.exe"; I
 
 [Run]
 Filename: "{app}\TransferXServer.exe"; Description: "Launch TransferX Server"; Flags: nowait postinstall skipifsilent
-
-[Code]
-procedure CurStepChanged(CurStep: TSetupStep);
-var
-  OldFilePath, NewFilePath: string;
-begin
-  if CurStep = ssInstall then
-  begin
-    OldFilePath := ExpandConstant('{app}\TransferXServer.exe');
-    NewFilePath := ExpandConstant('{app}\TransferXServer_old.exe');
-    if FileExists(OldFilePath) then
-    begin
-      FileCopy(OldFilePath, NewFilePath, False);
-      DeleteFile(OldFilePath);
-    end;
-  end;
-end;
-
-[UninstallDelete]
-Type: files; Name: "{app}\TransferXServer_old.exe"

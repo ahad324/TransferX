@@ -24,3 +24,8 @@ signtool sign /f myapp_certificate.pfx /p ahad324xv /tr http://timestamp.digicer
 
 <===== Verify ========>
 signtool verify /pa /v myapp.exe
+
+
+<=========== For checksum ==============>
+certutil -hashfile .\TransferX-v0.0.6.exe SHA256
+certutil -hashfile .\TransferXServer-v0.0.6.exe SHA256
