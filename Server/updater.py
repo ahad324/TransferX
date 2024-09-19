@@ -10,7 +10,7 @@ from packaging import version
 import tkinter as tk
 from tkinter import messagebox
 
-UPDATE_URL = "https://transferx.netlify.app/version.json"
+UPDATE_URL = "https://raw.githubusercontent.com/ahad324/TransferX/main/version.json"
 CURRENT_VERSION = "0.0.6"
 APP_NAME = "TransferXServer"
 update_status_label = None
