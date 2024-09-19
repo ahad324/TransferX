@@ -42,7 +42,7 @@ def set_update_status(message):
     if update_status_label and update_status_label.winfo_exists():
         update_status_label.config(text=message)
 
-def download_update(url,update_info):
+def download_update(url, update_info):
     try:
         with requests.get(url, stream=True, timeout=30) as response:
             response.raise_for_status()
@@ -82,14 +82,31 @@ def apply_update(update_file):
     if getattr(sys, 'frozen', False):
         try:
             set_update_status("Installing update...")
-            subprocess.Popen([update_file, "/VERYSILENT", "/NORESTART", "/CLOSEAPPLICATIONS"])
-            set_update_status("Update installed. Restarting application...")
+            # Use a batch file to handle the update process
+            batch_content = f"""
+@echo off
+:retry
+taskkill /F /IM {APP_NAME}.exe
+if %errorlevel% neq 0 (
+    timeout /t 2
+    goto retry
+)
+move /Y "{update_file}" "{APP_NAME}.exe"
+start "" "{APP_NAME}.exe"
+del "%~f0"
+            """
+            with open("update.bat", "w") as batch_file:
+                batch_file.write(batch_content)
+            subprocess.Popen("update.bat", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
             sys.exit()
-        except subprocess.SubprocessError as e:
+        except Exception as e:
             set_update_status(f"Error applying update: {e}")
-        finally:
             if os.path.exists(update_file):
-                os.remove(update_file)
+                try:
+                    os.remove(update_file)
+                    set_update_status("Cleaned up update file after error.")
+                except:
+                    set_update_status("Failed to clean up update file.")
     else:
         set_update_status("Update downloaded. Please run the new executable to update.")
 
