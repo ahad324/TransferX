@@ -88,6 +88,9 @@ class ThemeManager:
         style.configure('TProgressbar', background=PROGRESSBAR_COLOR, troughcolor='#D3D3D3')
         static_status_label.config(fg=BLACK_COLOR)
         self.developer_label.update_theme('light')
+        
+        # Ensure bluish elements maintain white text
+        self.update_bluish_elements(WHITE_COLOR)
 
     def set_dark_theme(self):
         self.root.tk_setPalette(background=BG_COLOR_DARK, foreground=WHITE_COLOR)
@@ -98,6 +101,9 @@ class ThemeManager:
         static_status_label.config(fg=WHITE_COLOR)
         roll_no_entry.config(fg=WHITE_COLOR)
         self.developer_label.update_theme('dark')
+        
+        # Ensure bluish elements maintain white text
+        self.update_bluish_elements(WHITE_COLOR)
 
     def toggle_theme(self):
         if self.theme == 'light':
@@ -107,7 +113,12 @@ class ThemeManager:
             self.set_light_theme()
             self.theme = 'light'
         self.root.update_idletasks()
-            
+    
+    def update_bluish_elements(self, text_color):
+        # Update all elements with bluish background to have white text
+        for widget in [theme_button, auto_connect_button, select_button, settings_button]:
+            widget.config(fg=text_color)
+        
     # Method to update specific frame background
     def update_frame_background(self, frame):
         if self.theme == 'light':
@@ -610,13 +621,24 @@ root.geometry(f"{root_windows_size['width']}x{root_windows_size['height']}")
 root.minsize(300, 300)
 set_window_icon(root)
 root.option_add("*Font", font.Font(family=FONT))
+
+bottom_frame = Frame(root)
+bottom_frame.pack(side='bottom', fill='x', padx=5, pady=5)
+
+status_left_frame = Frame(bottom_frame)
+status_left_frame.pack(side='left')
+
+static_status_label = Label(status_left_frame, text="Server Connection Status:", font=(FONT, 16, "bold"), fg=BLACK_COLOR, anchor='w')
+static_status_label.pack(side='left')
+dynamic_status_label = Label(status_left_frame, text="Disconnected", font=(FONT, 16,"bold"), fg=ERROR_COLOR, anchor='w')
+dynamic_status_label.pack(side='left')
+
 developer_label = create_developer_label(
-    root,
+    bottom_frame,
     FONT,
     light_theme={'bg': BG_COLOR_LIGHT, 'fg': BLACK_COLOR},
     dark_theme={'bg': BG_COLOR_DARK, 'fg': WHITE_COLOR}
 )
-
 # Create an instance of ThemeManager
 theme_manager = ThemeManager(root, developer_label)
 
@@ -631,14 +653,6 @@ style.configure('TButton', font=(FONT, 12), padding=10, relief='flat', backgroun
 style.configure('TLabel', font=(FONT, 16), padding=10)
 style.configure('TEntry', font=(FONT, 18), padding=10, relief='raised')
 style.configure('TProgressbar', thickness=30, troughcolor='#D3D3D3')
-
-
-status_frame = ttk.Frame(root)
-status_frame.pack(side='bottom', anchor='sw', padx=5, pady=5, fill='x')
-static_status_label = Label(status_frame, text="Server Connection Status:", font=(FONT, 16, "bold"), fg=BLACK_COLOR, anchor='w')
-static_status_label.pack(side='left')
-dynamic_status_label = Label(status_frame, text="Disconnected", font=(FONT, 16,"bold"), fg=ERROR_COLOR, anchor='w')
-dynamic_status_label.pack(side='left', fill='x', expand=True)
 
 theme_button = Button(root, text="🌙", command=theme_manager.toggle_theme, font=(FONT, 12), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=0, padx=10, pady=5)
 theme_button.place(relx=1, rely=0, anchor='ne')
@@ -679,7 +693,7 @@ select_button.pack(pady=30)
 select_button.bind("<Enter>", lambda e: select_button.config(bg=BUTTON_HOVER_COLOR))
 select_button.bind("<Leave>", lambda e: select_button.config(bg=BUTTON_COLOR_LIGHT))
 # Updater Label
-updater.update_status_label = Label(root, text=f"Version {updater.CURRENT_VERSION}", font=(FONT, 12))
+updater.update_status_label = Label(root, text=f"Version {updater.CURRENT_VERSION}", font=(FONT, 12,"italic"))
 updater.update_status_label.pack(pady=5)
 
 settings_button = Button(root, text="⚙️ Settings", command=open_settings, font=(FONT, 12), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=0, padx=10, pady=5)

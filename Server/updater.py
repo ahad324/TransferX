@@ -11,7 +11,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 UPDATE_URL = "https://raw.githubusercontent.com/ahad324/TransferX/main/version.json"
-CURRENT_VERSION = "0.0.6"
+CURRENT_VERSION = "0.0.7"
 APP_NAME = "TransferXServer"
 update_status_label = None
 

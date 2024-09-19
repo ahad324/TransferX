@@ -7,7 +7,7 @@ import re
 import sys
 
 # Configuration
-VERSION = "0.0.6"  # Update this for each new release
+VERSION = "0.0.7"  # Update this for each new release
 CLIENT_NAME = "TransferX"
 SERVER_NAME = "TransferXServer"
 INNO_SETUP_COMPILER = r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"  # Update this path if necessary
@@ -84,7 +84,7 @@ def update_version_in_files():
                 with open(file_path, "w", encoding="utf-8") as f:
                     f.write(content)
                 
-                print(f"Updated version in {file_path} from {current_version} to {VERSION}")
+                print(f"Updated version in {file_path} from {current_version}-> {VERSION}")
             else:
                 print(f"Could not find version string in {file_path}")
         except IOError as e:
@@ -102,7 +102,7 @@ def update_iss_file(file_path, app_name, output_base_filename):
         if version_match:
             current_version = version_match.group(1)
             content = content.replace(f'AppVersion={current_version}', f'AppVersion={VERSION}')
-            print(f"Updated AppVersion in {file_path} from {current_version} to {VERSION}")
+            print(f"Updated AppVersion in {file_path} from {current_version}-> {VERSION}")
         else:
             print(f"Could not find AppVersion in {file_path}")
         
