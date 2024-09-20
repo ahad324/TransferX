@@ -348,6 +348,7 @@ def submit_file(file_path, roll_no):
             def upload_file():
                 try:
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.settimeout(30)  # Set a 30-second timeout
                     
                     server_ip = server_ip_var.get()
                     server_port = int(server_port_var.get())
@@ -358,7 +359,6 @@ def submit_file(file_path, roll_no):
                         if dialog.winfo_exists():
                             messagebox.showerror("Connection Error", f"Could not connect to the server at {server_ip}:{server_port}. Please make sure the server is running. Error: {e}")
                             dialog.destroy()
-                        s.close()
                         return
 
                     filename = f"{roll_no}.zip" if file_path.endswith('.zip') else f"{roll_no}{os.path.splitext(file_path)[1]}"
@@ -371,7 +371,7 @@ def submit_file(file_path, roll_no):
                     metadata_json = json.dumps(metadata)
 
                     header = f"{metadata_json}\n{DELIMITER}\n"
-                    s.sendall(header.encode())
+                    s.sendall(header.encode('utf-8'))
 
                     progress['maximum'] = file_size
                     progress['value'] = 0
@@ -396,13 +396,22 @@ def submit_file(file_path, roll_no):
                                 return
 
                     s.shutdown(socket.SHUT_WR)
-                    response = s.recv(1024).decode()
+                    
+                    if total_sent != file_size:
+                        if dialog.winfo_exists():
+                            messagebox.showerror("Error", f"File size mismatch. Sent {total_sent} bytes, expected {file_size} bytes.")
+                        return
+
+                    response = s.recv(1024).decode('utf-8')
                     if response == 'ok':
                         if dialog.winfo_exists():
                             messagebox.showinfo("Success", "File uploaded successfully!")
                     else:
                         if dialog.winfo_exists():
-                            messagebox.showerror("Error", "Failed to upload file.")         
+                            messagebox.showerror("Error", f"Failed to upload file. Server response: {response}")
+                except socket.timeout:
+                    if dialog.winfo_exists():
+                        messagebox.showerror("Timeout Error", "The server did not respond in time. Please try again.")
                 except Exception as e:
                     if dialog.winfo_exists():
                         messagebox.showerror("Error", f"An error occurred during file upload: {str(e)}")

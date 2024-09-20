@@ -5,7 +5,7 @@ import os
 iconpath = '../Logo/logo.ico'
 
 a = Analysis(
-    ['server.py', 'udp_connect.py','updater.py'],  # Include udp_connect.py
+    ['server.py', 'udp_connect.py','updater.py','developer_label.py'],  # Include udp_connect.py
     pathex=[os.path.dirname(os.path.abspath(__name__))],
     binaries=[],
     datas=[(iconpath, 'Logo')],  # Include logo

@@ -2,7 +2,7 @@ import socket, sqlite3, re, os, sys, logging, json, io
 from pathlib import Path
 from threading import Thread, Event
 import tkinter as tk
-from tkinter import scrolledtext, messagebox, ttk, font, Label
+from tkinter import scrolledtext, messagebox, ttk, font, Label, Frame
 
 import udp_connect
 import updater
@@ -42,7 +42,7 @@ BUCKET_DIR = os.path.join(BASE_DIR, 'bucket_storage')
 FONT = "Segoe UI"
 
 # Define colors
-DARK_BG_COLOR = '#2E2E2E'
+DARK_BG_COLOR = '#161718'
 LIGHT_BG_COLOR = '#F0F2F5'
 
 # Server control flags
@@ -145,8 +145,9 @@ settings_frame.grid_columnconfigure(1, weight=2)
 
 def create_label_entry(frame, label_text, text_variable, row, font=(FONT, 12, "bold"), entry_width=30):
     tk.Label(frame, text=label_text, anchor="e", font=font).grid(row=row, column=0, padx=20, pady=10, sticky="e")
-    entry = tk.Entry(frame, textvariable=text_variable, font=(12), width=entry_width)
-    entry.grid(row=row, column=1, padx=20, pady=10)
+    entry = tk.Entry(frame, textvariable=text_variable, font=(FONT, 12), width=entry_width)
+    entry.config(relief="solid", borderwidth=1)
+    entry.grid(row=row, column=1, padx=20, pady=10, ipady=4, sticky="ew")  # Increase internal padding and make it expandable
     return entry
 
 # Create label-entry pairs
@@ -156,9 +157,13 @@ entry_widgets = [
     ("Chunk Size:", chunk_size_var, 2),
     ("Storage Directory:", directory_var, 3)
 ]
+
 # Create labels and entries
 for label_text, text_var, row in entry_widgets:
     create_label_entry(settings_frame, label_text, text_var, row)
+
+# Make the second column expandable
+settings_frame.grid_columnconfigure(1, weight=1)
 
 
 apply_button = tk.Button(settings_frame, text="Apply", command=lambda:apply_settings(), height=2, width=10,bg="#4CAF50", fg="white", relief="raised",font=(FONT,10,"bold"))
@@ -322,30 +327,36 @@ def handle_client(client_socket, log_text, addr):
         append_log(f"💾 Saving file to: {file_path}")
         
         bytes_received = 0
-        # Open the file using BufferedWriter for efficient writing
-        with open(file_path, 'wb') as f:
-            buf = io.BufferedWriter(f, buffer_size=CHUNK_SIZE)
-            while bytes_received < file_size:
-                chunk = client_socket.recv(CHUNK_SIZE)
-                if not chunk:
-                    break
-                buf.write(chunk)
-                bytes_received += len(chunk)
-                data_received_var.set(data_received_var.get() + len(chunk))
-            
-            # Flush the buffer to ensure all data is written to the file
-            buf.flush()
+        try:
+            # Open the file using BufferedWriter for efficient writing
+            with open(file_path, 'wb') as f:
+                buf = io.BufferedWriter(f, buffer_size=CHUNK_SIZE)
+                while bytes_received < file_size:
+                    chunk = client_socket.recv(CHUNK_SIZE)
+                    if not chunk:
+                        break
+                    buf.write(chunk)
+                    bytes_received += len(chunk)
+                    data_received_var.set(data_received_var.get() + len(chunk))
+                
+                # Flush the buffer to ensure all data is written to the file
+                buf.flush()
 
-        if bytes_received == file_size:
-            logger.info(f"✅ File received successfully: {filename}")
-            append_log(f"✅ File received successfully: {filename}")
-            file_count_var.set(file_count_var.get() + 1)
-            log_file_to_db(filename, file_size, file_path)
-            client_socket.sendall(b'ok')  # Send success response
-        else:
-            logger.error(f"{'⚠️' * 5} File transfer incomplete: {filename}")
-            append_log(f"{'⚠️' * 5} File transfer incomplete: {filename}")
+            if bytes_received == file_size:
+                logger.info(f"✅ File received successfully: {filename}")
+                append_log(f"✅ File received successfully: {filename}")
+                file_count_var.set(file_count_var.get() + 1)
+                log_file_to_db(filename, file_size, file_path)
+                client_socket.sendall(b'ok')  # Send success response
+            else:
+                raise ValueError(f"File transfer incomplete: {filename}")
+        except Exception as e:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            logger.error(f"{'⚠️' * 5} Error during file transfer: {str(e)}")
+            append_log(f"{'⚠️' * 5} Error during file transfer: {str(e)}")
             client_socket.sendall(b'error')
+            raise
 
     except Exception as e:
         logger.error(f"{'❗' * 5} Error handling client: {str(e)}")
@@ -561,9 +572,28 @@ init_db()
 ensure_base_dir_exists()
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
-# Updater Label
-updater.update_status_label = Label(root, text=f"Version {updater.CURRENT_VERSION}", font=(FONT, 12))
-updater.update_status_label.pack(pady=5)
+# Create bottom frame
+from developer_label import create_developer_label
+bottom_frame = Frame(root, bg=DARK_BG_COLOR)
+bottom_frame.pack(side='bottom', fill='x', padx=5, pady=5)
+
+# Version label (left side)
+version_frame = Frame(bottom_frame, bg=DARK_BG_COLOR)
+version_frame.pack(side='left')
+
+updater.update_status_label = Label(version_frame, text=f"Version {updater.CURRENT_VERSION}", font=(FONT, 10, "italic"), bg=DARK_BG_COLOR, fg="white")
+updater.update_status_label.pack(side='left', padx=10)
+
+# Import and use the DeveloperLabel class
+from developer_label import create_developer_label
+
+# Create developer label (right side)
+developer_label = create_developer_label(
+    bottom_frame,
+    FONT,
+    light_theme={'bg': DARK_BG_COLOR, 'fg': 'white'},
+    dark_theme={'bg': DARK_BG_COLOR, 'fg': 'white'}  # Same as light theme since there's no dark mode
+)
 updater.check_updates_async()
 # Run the Tkinter main loop
 root.mainloop()
