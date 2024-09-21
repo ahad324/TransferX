@@ -151,7 +151,7 @@ def create_progress_dialog():
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
             dialog.destroy()
             
-    dialog_size = {"width":350,"height":250}
+    dialog_size = {"width":350,"height":300}
     dialog = Toplevel(root)
     dialog.title("Uploading")
     dialog.geometry(f"{dialog_size['width']}x{dialog_size['height']}")
@@ -166,18 +166,24 @@ def create_progress_dialog():
 
     progress_label = Label(dialog, text="0%", font=(FONT, 16))
     progress_label.pack(pady=10)
-    speed_label = Label(dialog, text="Speed: 0 KB/s", font=(FONT, 12))
-    speed_label.pack(pady=5)
-    time_label = Label(dialog, text="Time Left: 0m 0s", font=(FONT, 12))
-    time_label.pack(pady=5)
+    sent_label = Label(dialog, text="Sent: 0 B/0 B", font=(FONT, 12))
+    sent_label.pack(pady=5)
+    time_speed_frame = Frame(dialog)
+    time_speed_frame.pack(pady=5)
+    speed_label = Label(time_speed_frame, text="Speed: 0 KB/s", font=(FONT, 12))
+    speed_label.pack(side="left", padx=5)
+    time_label = Label(time_speed_frame, text="Time Left: 0m 0s", font=(FONT, 12))
+    time_label.pack(side="left", padx=5)
     
     center_window(dialog, dialog_size["width"], dialog_size["height"])
+
     
     dialog.protocol("WM_DELETE_WINDOW", on_closing)
-    return dialog, progress, progress_label, speed_label, time_label
+    return dialog, progress, progress_label, speed_label, time_label, sent_label
 
 def create_zip_progress_dialog(on_cancel):
     def on_closing():
+
         if messagebox.askokcancel("Cancel Operation", "Are you sure you want to cancel the zipping process?"):
             on_cancel()
             dialog.destroy()
@@ -195,18 +201,19 @@ def create_zip_progress_dialog(on_cancel):
     progress = ttk.Progressbar(dialog, orient="horizontal", mode="determinate", length=350, style='TProgressbar')
     progress.pack(pady=15)
 
-    # Labels for displaying information
-    files_compressed_label = Label(dialog, text="Files Compressed: ", font=(FONT, 14))
+     # Overall Progress
+    compression_progress_label = Label(dialog, text="Compression Progress: 0%", font=(FONT, 14))
+    compression_progress_label.pack(pady=5)
+    files_compressed_label = Label(dialog, text="Files Compressed: 0/0", font=(FONT, 14))
     files_compressed_label.pack(pady=5)
     
-    file_name_label = Label(dialog, text="Current File: ", font=(FONT, 12))
-    file_name_label.pack(pady=5)
-
-    file_size_label = Label(dialog, text="File Size: ", font=(FONT, 12))
-    file_size_label.pack(pady=5)
-
-    compression_progress_label = Label(dialog, text="Compression Progress: ", font=(FONT, 14))
-    compression_progress_label.pack(pady=5)
+    # Current File Info
+    file_info_frame = Frame(dialog)
+    file_info_frame.pack(pady=10)
+    file_name_label = Label(file_info_frame, text="Current File: N/A", font=(FONT, 12), wraplength=300)
+    file_name_label.pack()
+    file_size_label = Label(file_info_frame, text="File Size: 0 B", font=(FONT, 12))
+    file_size_label.pack()
 
     # Cancel Button
     cancel_button = Button(dialog, text="Cancel", command=on_closing, font=(FONT, 14), bg=BUTTON_COLOR_DARK, fg=WHITE_COLOR, borderwidth=2, padx=10, pady=5)
@@ -347,9 +354,24 @@ def zip_files(file_paths, zip_file_path,on_complete):
 
 def submit_file(file_path, roll_no):
     def start_upload():
-        try:
-            dialog, progress, progress_label, speed_label, time_label = create_progress_dialog()
-            def upload_file():
+        MAX_RETRIES = 3
+        RETRY_DELAY = 5  # seconds
+        cancel_upload = False
+
+        dialog, progress, progress_label, speed_label, time_label, sent_label = create_progress_dialog()
+        def on_cancel():
+            nonlocal cancel_upload
+            if messagebox.askyesno("Confirm Cancellation", "Are you sure you want to cancel the upload?"):
+                cancel_upload = True
+                dialog.destroy()
+
+        dialog.protocol("WM_DELETE_WINDOW", on_cancel)
+
+        def upload_file():
+            nonlocal cancel_upload
+            for attempt in range(MAX_RETRIES):
+                if cancel_upload:
+                    break
                 try:
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     s.settimeout(30)  # Set a 30-second timeout
@@ -360,10 +382,7 @@ def submit_file(file_path, roll_no):
                     try:
                         s.connect((server_ip, server_port))
                     except (ConnectionRefusedError, OSError) as e:
-                        if dialog.winfo_exists():
-                            messagebox.showerror("Connection Error", f"Could not connect to the server at {server_ip}:{server_port}. Please make sure the server is running. Error: {e}")
-                            dialog.destroy()
-                        return
+                        raise Exception(f"Could not connect to the server at {server_ip}:{server_port}. Error: {e}")
 
                     filename = f"{roll_no}.zip" if file_path.endswith('.zip') else f"{roll_no}{os.path.splitext(file_path)[1]}"
                     file_size = os.path.getsize(file_path)
@@ -385,59 +404,57 @@ def submit_file(file_path, roll_no):
                     with open(file_path, 'rb') as f:
                         buf = io.BufferedReader(f, buffer_size=int(chunk_size_var.get()))
                         while True:
+                            if cancel_upload:
+                                raise Exception("Upload canceled by user")
                             data = buf.read(int(chunk_size_var.get()))
                             if not data:
                                 break
-                            try:
-                                s.sendall(data)
-                                total_sent += len(data)
-                                update_progress(progress, progress_label, speed_label, time_label, total_sent, file_size, start_time)
-                                if not dialog.winfo_exists():
-                                    raise Exception("Upload canceled by user")
-                            except ConnectionResetError:
-                                if dialog.winfo_exists():
-                                    messagebox.showerror("Connection Error", "The connection to the server was lost. Please try again.")
-                                return
+                            s.sendall(data)
+                            total_sent += len(data)
+                            update_progress(progress, progress_label, speed_label, time_label, sent_label, total_sent, file_size, start_time)
+                            if not dialog.winfo_exists():
+                                raise Exception("Upload canceled by user")
 
                     s.shutdown(socket.SHUT_WR)
                     
                     if total_sent != file_size:
-                        if dialog.winfo_exists():
-                            messagebox.showerror("Error", f"File size mismatch. Sent {total_sent} bytes, expected {file_size} bytes.")
-                        return
+                        raise Exception(f"File size mismatch. Sent {total_sent} bytes, expected {file_size} bytes.")
 
                     s.settimeout(10)  # Set a 10-second timeout for receiving the response
-                    try:
-                        response = s.recv(1024).decode('utf-8').strip()
-                        if response == 'ok':
-                            if dialog.winfo_exists():
-                                messagebox.showinfo("Success", "File uploaded successfully!")
-                        else:
-                            if dialog.winfo_exists():
-                                messagebox.showerror("Error", f"Failed to upload file. Server response: {response}")
-                    except socket.timeout:
-                        if dialog.winfo_exists():
-                            messagebox.showerror("Timeout Error", "The server did not respond after file upload. Please check the server status.")
-                except socket.timeout:
-                    if dialog.winfo_exists():
-                        messagebox.showerror("Timeout Error", "The server did not respond in time. Please try again.")
+                    response = s.recv(1024).decode('utf-8').strip()
+                    if response == 'ok':
+                        if not cancel_upload:
+                            dialog.after(0, dialog.destroy)
+                            messagebox.showinfo("Success", "File uploaded successfully!")
+                        return True  # Indicate successful upload
+                    else:
+                        raise Exception(f"Server response: {response}")
+
                 except Exception as e:
-                    if dialog.winfo_exists():
-                        messagebox.showerror("Error", f"An error occurred during file upload: {str(e)}")
+                    if cancel_upload:
+                        break
+                    if attempt < MAX_RETRIES - 1 and not cancel_upload:
+                        retry_msg = f"Upload failed. Retrying in {RETRY_DELAY} seconds... (Attempt {attempt + 1}/{MAX_RETRIES})\nError: {str(e)}"
+                        dialog.after(0, lambda: messagebox.showwarning("Retry", retry_msg) if dialog.winfo_exists() else None)
+                        for _ in range(RETRY_DELAY):
+                            if cancel_upload:
+                                break
+                            time.sleep(1)
+                    else:
+                        if not cancel_upload:
+                            error_msg = f"Upload failed after {MAX_RETRIES} attempts. Error: {str(e)}"
+                            dialog.after(0, lambda: messagebox.showerror("Error", error_msg) if dialog.winfo_exists() else None)
                 finally:
-                    if dialog.winfo_exists():
-                        dialog.destroy()
                     s.close()
 
-            Thread(target=upload_file).start()
-
-        except Exception as e:
             if dialog.winfo_exists():
-                messagebox.showerror("Error", str(e))
-            update_connection_status("Disconnected:", ERROR_COLOR)
-    
-    show_file_metadata([file_path], start_upload)
+                dialog.after(0, dialog.destroy)
+            return False  # Indicate failed upload
 
+        Thread(target=upload_file).start()
+
+    show_file_metadata([file_path], start_upload)
+    
 # Server Discovery and Connection
 def start_server_discovery(ip=None):
     try:
@@ -562,7 +579,7 @@ def show_file_metadata(file_paths, callback_on_upload):
 
     center_window(dialog, dialog_size["width"], dialog_size["height"])
 
-def update_progress(progress, progress_label, speed_label, time_label, total_sent, file_size, start_time):
+def update_progress(progress, progress_label, speed_label, time_label, sent_label, total_sent, file_size, start_time):
     elapsed_time = time.time() - start_time
     speed = total_sent / elapsed_time if elapsed_time > 0 else 0
     estimated_time = (file_size - total_sent) / speed if speed > 0 else 0
@@ -570,6 +587,7 @@ def update_progress(progress, progress_label, speed_label, time_label, total_sen
     progress_label['text'] = f"{int((total_sent / file_size) * 100)}%"
     speed_label['text'] = f"Speed: {speed / 1024:.2f} KB/s"
     time_label['text'] = f"Time Left: {estimated_time // 60:.0f}m {estimated_time % 60:.0f}s"
+    sent_label['text'] = f"Sent: {format_size(total_sent)} / {format_size(file_size)}"
     root.update_idletasks()
 
 def update_connection_status(message, color):

@@ -287,7 +287,7 @@ def handle_client(client_socket, log_text, addr):
         if not header_data:
             logger.error(f"{'❌' * 10} Header data not received correctly.")
             append_log(f"{'❌' * 10} Header data not received correctly.")
-            client_socket.sendall(b'error')  # Send error response
+            client_socket.sendall(b'Header data not received correctly.')  # Send error response
             return
 
         # Try to decode header data with different encodings
@@ -303,7 +303,7 @@ def handle_client(client_socket, log_text, addr):
         if header_str is None:
             logger.error(f"{'❌' * 10} Unable to decode header data.")
             append_log(f"{'❌' * 10} Unable to decode header data.")
-            client_socket.sendall(b'error')  # Send error response
+            client_socket.sendall(b'Unable to decode header data.')  # Send error response
             return
 
         # Process metadata
@@ -314,8 +314,9 @@ def handle_client(client_socket, log_text, addr):
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"{'❌' * 10} Error processing metadata: {e}")
             append_log(f"{'❌' * 10} Error processing metadata: {e}")
-            client_socket.sendall(b'error')  # Send error response
+            client_socket.sendall(b'Error processing metadata.')  # Send error response
             return
+
 
         # Ensure the bucket directory exists
         if not os.path.exists(BUCKET_DIR):
@@ -332,7 +333,7 @@ def handle_client(client_socket, log_text, addr):
             with open(file_path, 'wb') as f:
                 buf = io.BufferedWriter(f, buffer_size=CHUNK_SIZE)
                 while bytes_received < file_size:
-                    chunk = client_socket.recv(CHUNK_SIZE)
+                    chunk = client_socket.recv(min(CHUNK_SIZE, file_size - bytes_received))
                     if not chunk:
                         break
                     buf.write(chunk)
@@ -349,19 +350,20 @@ def handle_client(client_socket, log_text, addr):
                 log_file_to_db(filename, file_size, file_path)
                 client_socket.sendall(b'ok\n')  # Send success response
             else:
-                raise ValueError(f"File transfer incomplete: {filename}")
+                logger.warning(f"⚠️ File transfer incomplete: {filename}. Expected {file_size} bytes, received {bytes_received} bytes.")
+                append_log(f"⚠️ File transfer incomplete: {filename}. Expected {file_size} bytes, received {bytes_received} bytes.")
+                client_socket.sendall(b'File transfer incomplete.\n')
         except Exception as e:
             if os.path.exists(file_path):
                 os.remove(file_path)
             logger.error(f"{'⚠️' * 5} Error during file transfer: {str(e)}")
             append_log(f"{'⚠️' * 5} Error during file transfer: {str(e)}")
-            client_socket.sendall(b'error')
-            raise
-
+            client_socket.sendall(b'Error during file transfer.\n')
+            
     except Exception as e:
         logger.error(f"{'❗' * 5} Error handling client: {str(e)}")
         append_log(f"{'❗' * 5} Error handling client: {str(e)}")
-        client_socket.sendall(b'error')
+        client_socket.sendall(b'Error handling client.')
     finally:
         client_socket.close()
         connections.remove(client_socket)
