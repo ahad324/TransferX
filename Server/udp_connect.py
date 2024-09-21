@@ -44,7 +44,7 @@ def handle_udp_broadcast():
     
     server_ip = get_network_ip()
     log_message = lambda msg: (udp_logger.info(msg), GUI_LOG_CALLBACK(msg)) if GUI_LOG_CALLBACK else udp_logger.info(msg)
-    log_message("📡 UDP broadcast server is running...")
+    log_message(f"📡 UDP broadcast server is running {get_network_ip()}:{UDP_PORT}...")
     
     while not stop_event.is_set():
         try:
