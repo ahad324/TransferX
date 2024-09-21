@@ -166,9 +166,9 @@ def create_progress_dialog():
 
     progress_label = Label(dialog, text="0%", font=(FONT, 16))
     progress_label.pack(pady=10)
-    speed_label = Label(dialog, text="Speed: 0 KB/s", font=(FONT, 14))
+    speed_label = Label(dialog, text="Speed: 0 KB/s", font=(FONT, 12))
     speed_label.pack(pady=5)
-    time_label = Label(dialog, text="Time Left: 0m 0s", font=(FONT, 14))
+    time_label = Label(dialog, text="Time Left: 0m 0s", font=(FONT, 12))
     time_label.pack(pady=5)
     
     center_window(dialog, dialog_size["width"], dialog_size["height"])
@@ -199,10 +199,10 @@ def create_zip_progress_dialog(on_cancel):
     files_compressed_label = Label(dialog, text="Files Compressed: ", font=(FONT, 14))
     files_compressed_label.pack(pady=5)
     
-    file_name_label = Label(dialog, text="Current File: ", font=(FONT, 14))
+    file_name_label = Label(dialog, text="Current File: ", font=(FONT, 12))
     file_name_label.pack(pady=5)
 
-    file_size_label = Label(dialog, text="File Size: ", font=(FONT, 14))
+    file_size_label = Label(dialog, text="File Size: ", font=(FONT, 12))
     file_size_label.pack(pady=5)
 
     compression_progress_label = Label(dialog, text="Compression Progress: ", font=(FONT, 14))
@@ -282,64 +282,68 @@ def create_settings_dialog():
     return dialog
 
 # File Operations
-def zip_files(file_paths, zip_file_path):
-    def on_cancel():
-        nonlocal cancel_requested
-        cancel_requested = True
-        dialog.destroy()
+def zip_files(file_paths, zip_file_path,on_complete):
+    def zip_thread():
+        def on_cancel():
+            nonlocal cancel_requested
+            cancel_requested = True
+            dialog.destroy()
 
-    cancel_requested = False
-    dialog, progress, file_name_label, file_size_label, files_compressed_label, compression_progress_label = create_zip_progress_dialog(on_cancel)
+        cancel_requested = False
+        dialog, progress, file_name_label, file_size_label, files_compressed_label, compression_progress_label = create_zip_progress_dialog(on_cancel)
 
-    total_files = len(file_paths)
-    zipped_files = 0
-    chunk_size = int(chunk_size_var.get())
-    progress['maximum'] = 100
+        total_files = len(file_paths)
+        zipped_files = 0
+        chunk_size = int(chunk_size_var.get())
+        progress['maximum'] = 100
 
-    try:
-        with zipfile.ZipFile(zip_file_path, 'w') as zipf:
-            for i, file in enumerate(file_paths):
-                if cancel_requested:
-                    break
+        try:
+            with zipfile.ZipFile(zip_file_path, 'w') as zipf:
+                for i, file in enumerate(file_paths):
+                    if cancel_requested:
+                        break
 
-                file_name_label.config(text=f"Current File: {os.path.basename(file)}")
-                file_size = os.path.getsize(file)
-                file_size_label.config(text=f"File Size: {format_size(file_size)}")
-                files_compressed_label.config(text=f"Files Compressed: {zipped_files}/{total_files}")
+                    file_name_label.config(text=f"Current File: {os.path.basename(file)}")
+                    file_size = os.path.getsize(file)
+                    file_size_label.config(text=f"File Size: {format_size(file_size)}")
+                    files_compressed_label.config(text=f"Files Compressed: {zipped_files}/{total_files}")
 
-                file_sent = 0
-                last_percentage = 0
+                    file_sent = 0
+                    last_percentage = 0
 
-                with open(file, 'rb') as f:
-                    buf = io.BufferedReader(f, buffer_size=chunk_size)
-                    while not cancel_requested:
-                        chunk = buf.read(chunk_size)
-                        if not chunk:
-                            break
+                    with open(file, 'rb') as f:
+                        buf = io.BufferedReader(f, buffer_size=chunk_size)
+                        while not cancel_requested:
+                            chunk = buf.read(chunk_size)
+                            if not chunk:
+                                break
 
-                        zipf.writestr(os.path.basename(file), chunk)
-                        file_sent += len(chunk)
+                            zipf.writestr(os.path.basename(file), chunk)
+                            file_sent += len(chunk)
 
-                        percentage = (file_sent / file_size) * 100
-                        if int(percentage) != last_percentage:
-                            progress['value'] = percentage
-                            compression_progress_label.config(text=f"Compression Progress: {percentage:.2f}%")
-                            root.update_idletasks()
-                            last_percentage = int(percentage)
+                            percentage = (file_sent / file_size) * 100
+                            if int(percentage) != last_percentage:
+                                progress['value'] = percentage
+                                compression_progress_label.config(text=f"Compression Progress: {percentage:.2f}%")
+                                root.update_idletasks()
+                                last_percentage = int(percentage)
 
-                zipped_files += 1
-                files_compressed_label.config(text=f"Files Compressed: {zipped_files}/{total_files}")
+                    zipped_files += 1
+                    files_compressed_label.config(text=f"Files Compressed: {zipped_files}/{total_files}")
 
-    except Exception as e:
-        if cancel_requested:
-            os.remove(zip_file_path)
-            messagebox.showinfo("Cancelled", "The zipping process was cancelled.")
-        else:
-            messagebox.showinfo("Error", f"An error occurred: {str(e)}")
+        except Exception as e:
+            if cancel_requested:
+                os.remove(zip_file_path)
+                messagebox.showinfo("Cancelled", "The zipping process was cancelled.")
+            else:
+                messagebox.showinfo("Error", f"An error occurred: {str(e)}")
 
-    if not cancel_requested:
-        dialog.destroy()
-        messagebox.showinfo("Complete", "File compression completed successfully.")
+        if not cancel_requested:
+            dialog.destroy()
+            messagebox.showinfo("Complete", "File compression completed successfully.")
+            on_complete(zip_file_path)
+            
+    Thread(target=zip_thread,daemon=True).start()
 
 def submit_file(file_path, roll_no):
     def start_upload():
@@ -402,13 +406,18 @@ def submit_file(file_path, roll_no):
                             messagebox.showerror("Error", f"File size mismatch. Sent {total_sent} bytes, expected {file_size} bytes.")
                         return
 
-                    response = s.recv(1024).decode('utf-8')
-                    if response == 'ok':
+                    s.settimeout(10)  # Set a 10-second timeout for receiving the response
+                    try:
+                        response = s.recv(1024).decode('utf-8').strip()
+                        if response == 'ok':
+                            if dialog.winfo_exists():
+                                messagebox.showinfo("Success", "File uploaded successfully!")
+                        else:
+                            if dialog.winfo_exists():
+                                messagebox.showerror("Error", f"Failed to upload file. Server response: {response}")
+                    except socket.timeout:
                         if dialog.winfo_exists():
-                            messagebox.showinfo("Success", "File uploaded successfully!")
-                    else:
-                        if dialog.winfo_exists():
-                            messagebox.showerror("Error", f"Failed to upload file. Server response: {response}")
+                            messagebox.showerror("Timeout Error", "The server did not respond after file upload. Please check the server status.")
                 except socket.timeout:
                     if dialog.winfo_exists():
                         messagebox.showerror("Timeout Error", "The server did not respond in time. Please try again.")
@@ -478,8 +487,7 @@ def on_drop(event):
         if len(file_paths) > 1:
             zip_file_name = f"{sanitize_filename(roll_no)}.zip"
             zip_file_path = os.path.join(BASE_DIR, zip_file_name)
-            zip_files(file_paths, zip_file_path)
-            submit_file(zip_file_path, roll_no)
+            zip_files(file_paths, zip_file_path, lambda path: submit_file(path, roll_no))
         else:
             submit_file(file_paths[0], roll_no)
 
@@ -493,9 +501,9 @@ def select_files():
             return
 
         if len(file_paths) > 1:
-            zip_file_name = os.path.join(BASE_DIR, f"{sanitize_filename(roll_no)}.zip")
-            zip_files(file_paths, zip_file_name)
-            submit_file(os.path.join(CURRENT_DIR, zip_file_name), roll_no)
+            zip_file_name = f"{sanitize_filename(roll_no)}.zip"
+            zip_file_path = os.path.join(BASE_DIR, zip_file_name)
+            zip_files(file_paths, zip_file_path, lambda path: submit_file(path, roll_no))
         else:
             submit_file(file_paths[0], roll_no)
 

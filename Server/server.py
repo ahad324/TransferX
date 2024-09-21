@@ -347,7 +347,7 @@ def handle_client(client_socket, log_text, addr):
                 append_log(f"✅ File received successfully: {filename}")
                 file_count_var.set(file_count_var.get() + 1)
                 log_file_to_db(filename, file_size, file_path)
-                client_socket.sendall(b'ok')  # Send success response
+                client_socket.sendall(b'ok\n')  # Send success response
             else:
                 raise ValueError(f"File transfer incomplete: {filename}")
         except Exception as e:
