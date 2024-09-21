@@ -401,21 +401,28 @@ def submit_file(file_path, roll_no):
                     total_sent = 0
                     start_time = time.time()
 
+                    chunk_size = int(chunk_size_var.get())
                     with open(file_path, 'rb') as f:
-                        buf = io.BufferedReader(f, buffer_size=int(chunk_size_var.get()))
+                        buf = io.BufferedReader(f, buffer_size=chunk_size)
                         while True:
                             if cancel_upload:
                                 raise Exception("Upload canceled by user")
-                            data = buf.read(int(chunk_size_var.get()))
-                            if not data:
+                            chunk = buf.read(chunk_size)
+                            if not chunk:
                                 break
-                            s.sendall(data)
-                            total_sent += len(data)
+                            bytes_sent = 0
+                            while bytes_sent < len(chunk):
+                                sent = s.send(chunk[bytes_sent:])
+                                if sent == 0:
+                                    raise RuntimeError("socket connection broken")
+                                bytes_sent += sent
+                            total_sent += bytes_sent
                             update_progress(progress, progress_label, speed_label, time_label, sent_label, total_sent, file_size, start_time)
                             if not dialog.winfo_exists():
                                 raise Exception("Upload canceled by user")
 
                     s.shutdown(socket.SHUT_WR)
+
                     
                     if total_sent != file_size:
                         raise Exception(f"File size mismatch. Sent {total_sent} bytes, expected {file_size} bytes.")
