@@ -5,7 +5,7 @@ import os
 iconpath = '../Logo/logo.ico'
 
 a = Analysis(
-    ['server.py', 'udp_connect.py','updater.py','developer_label.py'],  # Include udp_connect.py
+    ['server.py', 'udp_connect.py','updater.py','developer_label.py'],
     pathex=[os.path.dirname(os.path.abspath(__name__))],
     binaries=[],
     datas=[(iconpath, 'Logo')],  # Include logo
@@ -13,7 +13,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=['matplotlib','numpy','pandas','scipy','PIL','cryptography'],
     noarchive=False,
     optimize=0,
 )
@@ -33,11 +33,11 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,  # Set to True if you need a console window for debugging
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=iconpath,  # Add icon to the executable
+    icon=iconpath,
 )
