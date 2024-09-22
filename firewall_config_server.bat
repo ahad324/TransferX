@@ -8,7 +8,7 @@ netsh advfirewall firewall add rule name="transferxserver" dir=in action=allow p
 netsh advfirewall firewall add rule name="transferxserver" dir=out action=allow program="%~dp0TransferXServer.exe" protocol=TCP
 
 :: Allow incoming UDP connections on port 5000 for discovery
-netsh advfirewall firewall add rule name="transferxserver" dir=in action=allow protocol=UDP localport=5000
+netsh advfirewall firewall add rule name="transferxserver" dir=in action=allow protocol=UDP localport=55001
 
 :: Allow outgoing UDP connections from TransferXServer.exe for discovery responses
 netsh advfirewall firewall add rule name="transferxserver" dir=out action=allow program="%~dp0TransferXServer.exe" protocol=UDP

@@ -8,10 +8,10 @@ netsh advfirewall firewall add rule name="TransferX Client (TCP Out)" dir=out ac
 netsh advfirewall firewall add rule name="TransferX Client (TCP In)" dir=in action=allow program="%~dp0TransferX.exe" protocol=TCP
 
 :: Allow outgoing UDP connections for server discovery
-netsh advfirewall firewall add rule name="TransferX Client Discovery (UDP Out)" dir=out action=allow protocol=UDP remoteport=5000
+netsh advfirewall firewall add rule name="TransferX Client Discovery (UDP Out)" dir=out action=allow protocol=UDP remoteport=55001
 
 :: Allow incoming UDP connections for server discovery responses
-netsh advfirewall firewall add rule name="TransferX Client Discovery (UDP In)" dir=in action=allow protocol=UDP localport=5000
+netsh advfirewall firewall add rule name="TransferX Client Discovery (UDP In)" dir=in action=allow protocol=UDP localport=55001
 
 echo Firewall rules added for TransferX Client.
 echo If you still experience connection issues, please check your antivirus settings.
