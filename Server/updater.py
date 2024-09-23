@@ -10,7 +10,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 GITHUB_API_URL = "https://api.github.com/repos/ahad324/TransferX/releases/latest"
-CURRENT_VERSION = "0.0.7"
+AppVersion = "0.0.7"
 APP_NAME = "TransferXServer"
 update_status_label = None
 
@@ -27,7 +27,7 @@ def check_for_updates():
         response.raise_for_status()
         release_info = response.json()
         latest_version = release_info['tag_name']
-        if version.parse(latest_version) > version.parse(CURRENT_VERSION):
+        if version.parse(latest_version) > version.parse(AppVersion):
             return release_info
         return None
     except Exception as e:
@@ -100,7 +100,7 @@ def show_update_notification(version):
 
 def update_app():
     if not is_connected():
-        set_update_status(f"No internet connection. Version {CURRENT_VERSION}")
+        set_update_status(f"No internet connection. Version {AppVersion}")
         return
     
     update_info = check_for_updates()
@@ -111,7 +111,7 @@ def update_app():
         if update_file:
             apply_update(update_file)
     else:
-        set_update_status(f"Version {CURRENT_VERSION}")
+        set_update_status(f"Version {AppVersion}")
 
 def check_updates_async():
     threading.Thread(target=update_app, daemon=True).start()

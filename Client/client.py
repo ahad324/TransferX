@@ -733,7 +733,7 @@ select_button.pack(pady=30)
 select_button.bind("<Enter>", lambda e: select_button.config(bg=BUTTON_HOVER_COLOR))
 select_button.bind("<Leave>", lambda e: select_button.config(bg=BUTTON_COLOR_LIGHT))
 # Updater Label
-updater.update_status_label = Label(root, text=f"Version {updater.CURRENT_VERSION}", font=(FONT, 12,"italic"))
+updater.update_status_label = Label(root, text=f"Version {updater.AppVersion}", font=(FONT, 12,"italic"))
 updater.update_status_label.pack(pady=5)
 
 settings_button = Button(root, text="⚙️ Settings", command=open_settings, font=(FONT, 12), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=0, padx=10, pady=5)

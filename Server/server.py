@@ -578,7 +578,7 @@ bottom_frame.pack(side='bottom', fill='x', padx=5, pady=5)
 version_frame = Frame(bottom_frame, bg=DARK_BG_COLOR)
 version_frame.pack(side='left')
 
-updater.update_status_label = Label(version_frame, text=f"Version {updater.CURRENT_VERSION}", font=(FONT, 10, "italic"), bg=DARK_BG_COLOR, fg="white")
+updater.update_status_label = Label(version_frame, text=f"Version {updater.AppVersion}", font=(FONT, 10, "italic"), bg=DARK_BG_COLOR, fg="white")
 updater.update_status_label.pack(side='left', padx=10)
 
 # Import and use the DeveloperLabel class
@@ -589,7 +589,7 @@ developer_label = create_developer_label(
     bottom_frame,
     FONT,
     light_theme={'bg': DARK_BG_COLOR, 'fg': 'white'},
-    dark_theme={'bg': DARK_BG_COLOR, 'fg': 'white'}  # Same as light theme since there's no dark mode
+    dark_theme={'bg': DARK_BG_COLOR, 'fg': 'white'}
 )
 updater.check_updates_async()
 # Run the Tkinter main loop

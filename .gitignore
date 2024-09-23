@@ -6,7 +6,7 @@ Server/build/
 Server/dist/
 Server/server.log
 Server/server_data.db
-Server/udp_connections.log
+Server/mdns_connections.log
 
 # Client directories
 Client/build/
