@@ -5,11 +5,11 @@ import os
 iconpath = '../Logo/logo.ico'
 
 a = Analysis(
-    ['server.py', 'udp_connect.py','updater.py','developer_label.py'],
+    ['server.py', 'mdns_connect.py','updater.py','developer_label.py'],
     pathex=[os.path.dirname(os.path.abspath(__name__))],
     binaries=[],
     datas=[(iconpath, 'Logo')],  # Include logo
-    hiddenimports=['requests','packaging'],  # Add any hidden imports required
+    hiddenimports=['requests','packaging','zeroconf', 'zeroconf._utils','zeroconf._utils.ipaddress', 'zeroconf._services', 'zeroconf._core', 'zeroconf._engine', 'zeroconf._listener','zeroconf._handlers.answers'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

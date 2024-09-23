@@ -11,7 +11,7 @@ from threading import Thread
 from tkinter import Frame, ttk, Button, filedialog, messagebox, Label, Entry, StringVar, Toplevel, font, Listbox
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
-import udp_connect
+import mdns_connect
 import updater
 from developer_label import create_developer_label
 
@@ -403,19 +403,16 @@ def submit_file(file_path, roll_no):
 
                     chunk_size = int(chunk_size_var.get())
                     with open(file_path, 'rb') as f:
-                        buf = io.BufferedReader(f, buffer_size=chunk_size)
                         while True:
                             if cancel_upload:
                                 raise Exception("Upload canceled by user")
-                            chunk = buf.read(chunk_size)
+                            chunk = f.read(chunk_size)
                             if not chunk:
                                 break
                             bytes_sent = 0
                             while bytes_sent < len(chunk):
-                                sent = s.send(chunk[bytes_sent:])
-                                if sent == 0:
-                                    raise RuntimeError("socket connection broken")
-                                bytes_sent += sent
+                                s.sendall(chunk[bytes_sent:])
+                                bytes_sent += len(chunk)
                             total_sent += bytes_sent
                             update_progress(progress, progress_label, speed_label, time_label, sent_label, total_sent, file_size, start_time)
                             if not dialog.winfo_exists():
@@ -466,9 +463,9 @@ def submit_file(file_path, roll_no):
 def start_server_discovery(ip=None):
     try:
         if ip is None:
-            result = udp_connect.discover_server(timeout=TIMEOUT)
+            result = mdns_connect.discover_server(timeout=TIMEOUT)
         else:
-            result = udp_connect.discover_server(ip, TIMEOUT)
+            result = mdns_connect.discover_server(ip, TIMEOUT)
         
         return result
     except Exception as e:
@@ -482,8 +479,9 @@ def on_discovery_complete(result, loading_dialog):
         update_connection_status("Disconnected", ERROR_COLOR)
     elif result['status'] == 'success':
         server_ip_var.set(result['server_ip'])
-        messagebox.showinfo("Success", f"Connected to server at {result['server_ip']}")
-        update_connection_status(f"Connected to {result['server_ip']}", SUCCESS_COLOR)
+        server_port_var.set(result['server_port'])
+        messagebox.showinfo("Success", f"Connected to server at {result['server_ip']}:{result['server_port']}")
+        update_connection_status(f"Connected to {result['server_ip']}:{result['server_port']}", SUCCESS_COLOR)
 
 def auto_connect():
     loading_dialog = create_loading_screen()

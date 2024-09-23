@@ -4,7 +4,7 @@ from threading import Thread, Event
 import tkinter as tk
 from tkinter import scrolledtext, messagebox, ttk, font, Label, Frame
 
-import udp_connect
+import mdns_connect
 import updater
 # Determine the user's Downloads folder path
 def get_downloads_folder():
@@ -56,11 +56,11 @@ def set_window_icon(window):
     logo_path = os.path.join(current_dir, 'Logo', 'logo.ico')
     window.iconbitmap(logo_path)
 
-# Functions to append text to UDP and Logs
-def append_udp_log(message):
+# Functions to append text to mdns and Logs
+def append_mdns_log(message):
     def update_log():
-        udp_log_text.insert(tk.END, message + "\n")
-        udp_log_text.yview(tk.END)
+        mdns_log_text.insert(tk.END, message + "\n")
+        mdns_log_text.yview(tk.END)
     root.after(0, update_log)
 def append_log(message):
     log_text.insert(tk.END,message+"\n")
@@ -97,9 +97,9 @@ log_frame = tk.Frame(notebook,padx=20)
 log_frame.pack(fill=tk.BOTH, expand=True)
 notebook.add(log_frame, text="Logs")
 
-udp_log_frame = tk.Frame(notebook, padx=20)
-udp_log_frame.pack(fill=tk.BOTH, expand=True)
-notebook.add(udp_log_frame, text="UDP Logs")
+mdns_log_frame = tk.Frame(notebook, padx=20)
+mdns_log_frame.pack(fill=tk.BOTH, expand=True)
+notebook.add(mdns_log_frame, text="MDNS Logs")
 
 status_frame = tk.Frame(notebook)
 notebook.add(status_frame, text="Status")
@@ -114,12 +114,12 @@ log_frame.grid_rowconfigure(0, weight=1)
 log_frame.grid_columnconfigure(0, weight=1)
 append_log("CLICK ON THE START SERVER BUTTON...")
 
-# Create and pack the UDP log text area
-udp_log_text = scrolledtext.ScrolledText(udp_log_frame, wrap=tk.WORD, bg=LIGHT_BG_COLOR, height=20, font=("Courier", 10))
-udp_log_text.grid(row=0, column=0, sticky='nsew')
-udp_log_frame.grid_rowconfigure(0, weight=1)
-udp_log_frame.grid_columnconfigure(0, weight=1)
-append_udp_log("UDP Connection logs will appear here...")
+# Create and pack the mdns log text area
+mdns_log_text = scrolledtext.ScrolledText(mdns_log_frame, wrap=tk.WORD, bg=LIGHT_BG_COLOR, height=20, font=("Courier", 10))
+mdns_log_text.grid(row=0, column=0, sticky='nsew')
+mdns_log_frame.grid_rowconfigure(0, weight=1)
+mdns_log_frame.grid_columnconfigure(0, weight=1)
+append_mdns_log("MDNS Connection logs will appear here...")
 
 # Status frame content
 status_frame.grid_columnconfigure(0, weight=1)
@@ -329,19 +329,14 @@ def handle_client(client_socket, log_text, addr):
         
         bytes_received = 0
         try:
-            # Open the file using BufferedWriter for efficient writing
             with open(file_path, 'wb') as f:
-                buf = io.BufferedWriter(f, buffer_size=CHUNK_SIZE)
                 while bytes_received < file_size:
                     chunk = client_socket.recv(min(CHUNK_SIZE, file_size - bytes_received))
                     if not chunk:
                         break
-                    buf.write(chunk)
+                    f.write(chunk)
                     bytes_received += len(chunk)
                     data_received_var.set(data_received_var.get() + len(chunk))
-                
-                # Flush the buffer to ensure all data is written to the file
-                buf.flush()
 
             if bytes_received == file_size:
                 logger.info(f"✅ File received successfully: {filename}")
@@ -415,7 +410,7 @@ def log_separator(context):
 
 # Function to start the server
 def start_server():
-    global server_running, server_socket
+    global server_running, server_socket, zeroconf, mdns_info, mdns_browser
     if not server_running:
         ip = server_ip_var.get()
         port = server_port_var.get()
@@ -446,8 +441,8 @@ def start_server():
             Thread(target=accept_connections, daemon=True).start()
             logger.info(f"|{'=' * 20 } 📡 Server started on {ip}:{port} {'=' * 20 }|")
             append_log(f"|{'=' * 20 } 📡 Server started on {ip}:{port} {'=' * 20 }|")
-            # Start the UDP listener
-            udp_connect.start_udp_listener(BASE_DIR, append_udp_log)
+            # Start the mDNS server
+            zeroconf, mdns_info, mdns_browser = mdns_connect.start_mdns_listener(BASE_DIR, append_mdns_log, port)
             
         except socket.error as e:
             if e.errno == 10048:
@@ -484,8 +479,8 @@ def stop_server():
     if not server_running:
         messagebox.showwarning("⚠️ Server not running", "The server is not currently running.")
         return
-    # Stop the UDP listener
-    udp_connect.stop_udp_listener()
+    # Stop the mDNS server
+    mdns_connect.stop_mdns_listener(zeroconf, mdns_info,mdns_browser)
     server_running = False
     stop_event.set()
 
@@ -525,7 +520,7 @@ def restart_server():
 # Function to clear the logs
 def clear_logs():
     log_text.delete('1.0', tk.END)
-    udp_log_text.delete('1.0',tk.END)
+    mdns_log_text.delete('1.0',tk.END)
 
 def on_closing():
     if server_running:
