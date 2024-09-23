@@ -29,9 +29,3 @@ signtool verify /pa /v myapp.exe
 <=========== For checksum ==============>
 certutil -hashfile .\TransferX-v0.0.6.exe SHA256
 certutil -hashfile .\TransferXServer-v0.0.6.exe SHA256
-
-
-
-
-
-Releases>squirrel --releasify TransferX.1.0.0.nupkg

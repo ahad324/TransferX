@@ -32,25 +32,6 @@ def create_inno_setup(iss_file, name):
     print(f"Creating Inno Setup installer for {name}...")
     output = run_command(f'"{INNO_SETUP_COMPILER}" {iss_file}')
 
-def update_version_json():
-    try:
-        version_data = {
-            "client": {
-                "version": VERSION,
-                "url": f"https://github.com/ahad324/TransferX/releases/download/v{VERSION}/{CLIENT_NAME}-v{VERSION}.exe"
-            },
-            "server": {
-                "version": VERSION,
-                "url": f"https://github.com/ahad324/TransferX/releases/download/v{VERSION}/{SERVER_NAME}-v{VERSION}.exe"
-            }
-        }
-        with open("version.json", "w") as f:
-            json.dump(version_data, f, indent=2)
-    except IOError as e:
-        print("Error updating version.json file")
-        print(f"Error: {str(e)}")
-        sys.exit(1)
-
 def update_version_in_files():
     files_to_update = [
         "Client/updater.py",
@@ -110,7 +91,7 @@ def update_iss_file(file_path, app_name, output_base_filename):
         print(f"Error updating .iss file: {file_path}")
         print(f"Error: {str(e)}")
         sys.exit(1)
-        
+
 def main():
     try:
         # Update version in all necessary files
@@ -140,16 +121,10 @@ def main():
         if not os.path.exists(server_installer):
             raise FileNotFoundError(f"Server installer not found: {server_installer}")
 
-        # Update version.json
-        update_version_json()
-
         print("Build process completed successfully!")
         print("Don't forget to update the version.json file on your server!")
-    except FileNotFoundError as e:
-        print(f"File not found error: {str(e)}")
-        sys.exit(1)
     except Exception as e:
-        print(f"An unexpected error occurred: {str(e)}")
+        print(f"Error during build process: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

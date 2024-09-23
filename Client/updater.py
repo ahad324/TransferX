@@ -9,7 +9,7 @@ from packaging import version
 import tkinter as tk
 from tkinter import messagebox
 
-UPDATE_URL = "https://raw.githubusercontent.com/ahad324/TransferX/main/version.json"
+GITHUB_API_URL = "https://api.github.com/repos/ahad324/TransferX/releases/latest"
 CURRENT_VERSION = "0.0.7"
 APP_NAME = "TransferX"
 update_status_label = None
@@ -23,13 +23,12 @@ def is_connected():
 
 def check_for_updates():
     try:
-        response = requests.get(UPDATE_URL, timeout=10)
+        response = requests.get(GITHUB_API_URL, timeout=10)
         response.raise_for_status()
-        version_info = response.json()
-        app_type = "client"
-        if app_type in version_info and 'version' in version_info[app_type]:
-            if version.parse(version_info[app_type]['version']) > version.parse(CURRENT_VERSION):
-                return version_info[app_type]
+        release_info = response.json()
+        latest_version = release_info['tag_name']
+        if version.parse(latest_version) > version.parse(CURRENT_VERSION):
+            return release_info
         return None
     except Exception as e:
         print(f"Error checking for updates: {e}")
@@ -65,7 +64,6 @@ def apply_update(update_file):
     if getattr(sys, 'frozen', False):
         try:
             set_update_status("Installing update...")
-            # Use a batch file to handle the update process
             batch_content = f"""
 @echo off
 :retry
@@ -107,9 +105,9 @@ def update_app():
     
     update_info = check_for_updates()
     if update_info:
-        set_update_status(f"New version {update_info['version']} available.")
-        show_update_notification(update_info['version'])
-        update_file = download_update(update_info['url'])
+        set_update_status(f"New version {update_info['tag_name']} available.")
+        show_update_notification(update_info['tag_name'])
+        update_file = download_update(update_info['assets'][0]['browser_download_url'])
         if update_file:
             apply_update(update_file)
     else:
