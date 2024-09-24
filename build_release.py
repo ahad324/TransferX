@@ -8,7 +8,7 @@ import sys
 from datetime import datetime, timezone
 
 # Configuration
-VERSION = "0.0.7"  # Update this for each new release
+VERSION = "0.0.8"  # Update this for each new release
 CLIENT_NAME = "TransferX"
 SERVER_NAME = "TransferXServer"
 INNO_SETUP_COMPILER = r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"  # Update this path if necessary

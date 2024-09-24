@@ -6,13 +6,13 @@
     <description>Latest updates for TransferX</description>
     <language>en</language>
     <item>
-      <title>Version 0.0.7</title>
-      <sparkle:releaseNotesLink>https://github.com/ahad324/TransferX/releases/tag/v0.0.7</sparkle:releaseNotesLink>
-      <pubDate>Tue, 24 Sep 2024 12:24:51 +0000</pubDate>
-      <enclosure url="https://github.com/ahad324/TransferX/releases/download/v0.0.7/TransferX-0.0.7.exe"
-                 sparkle:version="0.0.7"
-                 sparkle:shortVersionString="0.0.7"
-                 length="17848668"
+      <title>Version 0.0.8</title>
+      <sparkle:releaseNotesLink>https://github.com/ahad324/TransferX/releases/tag/v0.0.8</sparkle:releaseNotesLink>
+      <pubDate>Tue, 24 Sep 2024 13:46:11 +0000</pubDate>
+      <enclosure url="https://github.com/ahad324/TransferX/releases/download/v0.0.8/TransferX-0.0.8.exe"
+                 sparkle:version="0.0.8"
+                 sparkle:shortVersionString="0.0.8"
+                 length="17848803"
                  type="application/octet-stream"/>
     </item>
   </channel>

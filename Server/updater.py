@@ -11,7 +11,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 UPDATE_URL = "https://raw.githubusercontent.com/ahad324/TransferX/main/Server/appcast.xml"
-AppVersion = "0.0.7"
+AppVersion = "0.0.8"
 APP_NAME = "TransferXServer"
 update_status_label = None
 
@@ -43,6 +43,8 @@ except OSError as e:
 def init_winsparkle():
     winsparkle.win_sparkle_set_appcast_url(UPDATE_URL.encode('utf-8'))
     winsparkle.win_sparkle_set_app_details(APP_NAME.encode('utf-8'), APP_NAME.encode('utf-8'), AppVersion.encode('utf-8'))
+    winsparkle.win_sparkle_set_automatic_check_for_updates(1)  # Enable automatic update checks
+    winsparkle.win_sparkle_set_update_check_interval(3600)  # Check for updates every hour (3600 seconds)
     winsparkle.win_sparkle_init()
 
 def check_for_updates():
