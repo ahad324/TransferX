@@ -7,7 +7,7 @@ import zipfile
 import io
 import re
 from pathlib import Path
-from threading import Thread
+from threading import Thread, Event
 from tkinter import Frame, ttk, Button, filedialog, messagebox, Label, Entry, StringVar, Toplevel, font, Listbox
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
@@ -23,6 +23,7 @@ DELIMITER = "---END-HEADER---"
 FONT = 'Segoe UI'
 PASSWORD = "ahad"
 TIMEOUT = 10
+discovery_stop_event = Event()
 
 # Colors
 WHITE_COLOR = 'white'
@@ -141,7 +142,13 @@ def create_loading_screen():
     progress.pack(pady=10)
     progress.start()
 
-    loading_dialog.protocol("WM_DELETE_WINDOW", lambda: loading_dialog.destroy() if messagebox.askokcancel("Quit", "Do you want to quit?") else None)
+    def on_dialog_close():
+            discovery_stop_event.set()  # Signal the discovery process to stop
+            loading_dialog.destroy()
+            messagebox.showinfo("Discovery Cancelled", "Server discovery has been cancelled.")
+            update_connection_status("Disconnected", ERROR_COLOR)
+
+    loading_dialog.protocol("WM_DELETE_WINDOW", on_dialog_close)
     center_window(loading_dialog, dialog_size["width"], dialog_size['height'])
     
     return loading_dialog
@@ -256,7 +263,11 @@ def create_settings_dialog():
 
                 def async_discovery():
                     result = start_server_discovery(new_ip)
-                    on_discovery_complete(result, loading_dialog)
+                    if result is None:
+                        if loading_dialog.winfo_exists():
+                            loading_dialog.destroy()
+                    else:
+                        on_discovery_complete(result, loading_dialog)
                 Thread(target=async_discovery).start()
 
             check_connection(new_ip)
@@ -396,8 +407,11 @@ def submit_file(file_path, roll_no):
                     header = f"{metadata_json}\n{DELIMITER}\n"
                     s.sendall(header.encode('utf-8'))
 
+                    # Receive the current size of the file on the server
+                    bytes_sent = int(s.recv(1024).decode('utf-8').strip())
+                    
                     progress['maximum'] = file_size
-                    progress['value'] = 0
+                    progress['value'] = bytes_sent
                     total_sent = 0
                     start_time = time.time()
 
@@ -461,11 +475,13 @@ def submit_file(file_path, roll_no):
     
 # Server Discovery and Connection
 def start_server_discovery(ip=None):
+    global discovery_stop_event
+    discovery_stop_event.clear()  # Reset the event
     try:
         if ip is None:
-            result = mdns_connect.discover_server(timeout=TIMEOUT)
+            result = mdns_connect.discover_server(timeout=TIMEOUT, stop_event=discovery_stop_event)
         else:
-            result = mdns_connect.discover_server(ip, TIMEOUT)
+            result = mdns_connect.discover_server(ip, TIMEOUT, stop_event=discovery_stop_event)
         
         return result
     except Exception as e:
@@ -488,7 +504,11 @@ def auto_connect():
 
     def async_discovery():
         result = start_server_discovery()
-        on_discovery_complete(result, loading_dialog)
+        if result is None:
+            if loading_dialog.winfo_exists():
+                loading_dialog.destroy()
+        else:
+            on_discovery_complete(result, loading_dialog)
 
     Thread(target=async_discovery).start()
 

@@ -280,14 +280,17 @@ def handle_client(client_socket, log_text, addr):
             new_file_path = f"{base}({counter}){extension}"
             counter += 1
         return new_file_path
+    
+    def get_file_size(file_path):
+            return os.path.getsize(file_path) if os.path.exists(file_path) else 0
 
     try:
         # Receive header data
         header_data = receive_until_delimiter(DELIMITER)
         if not header_data:
-            logger.error(f"{'❌' * 10} Header data not received correctly.")
-            append_log(f"{'❌' * 10} Header data not received correctly.")
-            client_socket.sendall(b'Header data not received correctly.')  # Send error response
+            logger.error("❌ Header data not received.This might be a discovery request.")
+            append_log("❌ Header data not received.This might be a discovery request.")
+            client_socket.sendall(b'Header data not received.')  # Send error response
             return
 
         # Try to decode header data with different encodings
@@ -327,7 +330,9 @@ def handle_client(client_socket, log_text, addr):
         logger.info(f"💾 Saving file to: {file_path}")
         append_log(f"💾 Saving file to: {file_path}")
         
-        bytes_received = 0
+        # Check if the file already exists and get its size
+        bytes_received = get_file_size(file_path)
+        client_socket.sendall(f"{bytes_received}".encode('utf-8'))  # Send the current size to the client
         try:
             with open(file_path, 'wb') as f:
                 while bytes_received < file_size:

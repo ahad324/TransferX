@@ -10,7 +10,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 GITHUB_API_URL = "https://api.github.com/repos/ahad324/TransferX/releases/latest"
-AppVersion = "0.0.7"
+AppVersion = "0.0.1"
 APP_NAME = "TransferXServer"
 update_status_label = None
 
