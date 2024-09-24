@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>TransferX Updates</title>
+    <link>https://github.com/ahad324/TransferX/releases</link>
+    <description>Latest updates for TransferX</description>
+    <language>en</language>
+    <item>
+      <title>Version 0.0.7</title>
+      <sparkle:releaseNotesLink>https://github.com/ahad324/TransferX/releases/tag/v0.0.7</sparkle:releaseNotesLink>
+      <pubDate>Tue, 24 Sep 2024 12:24:51 +0000</pubDate>
+      <enclosure url="https://github.com/ahad324/TransferX/releases/download/v0.0.7/TransferX-0.0.7.exe"
+                 sparkle:version="0.0.7"
+                 sparkle:shortVersionString="0.0.7"
+                 length="17848668"
+                 type="application/octet-stream"/>
+    </item>
+  </channel>
+</rss>

@@ -12,6 +12,7 @@ AppPublisher=AbdulAhad
 
 [Files]
 Source: "dist\TransferX.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\WinSparkle.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\Logo\AppIcon.ico"; DestDir: "{app}\Logo"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]

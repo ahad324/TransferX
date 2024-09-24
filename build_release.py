@@ -5,12 +5,18 @@ import json
 import shutil
 import re
 import sys
+from datetime import datetime, timezone
 
 # Configuration
 VERSION = "0.0.7"  # Update this for each new release
 CLIENT_NAME = "TransferX"
 SERVER_NAME = "TransferXServer"
 INNO_SETUP_COMPILER = r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"  # Update this path if necessary
+RELEASES_URL = "https://github.com/ahad324/TransferX/releases"
+RELEASE_NOTES_URL = f"{RELEASES_URL}/tag/v{VERSION}"
+DOWNLOAD_URL_CLIENT = f"{RELEASES_URL}/download/v{VERSION}/TransferX-{VERSION}.exe"
+DOWNLOAD_URL_SERVER = f"{RELEASES_URL}/download/v{VERSION}/TransferXServer-{VERSION}.exe"
+PUB_DATE = datetime.now(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S +0000")
 
 def run_command(command):
     try:
@@ -38,7 +44,7 @@ def update_version_in_files(file_paths):
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
             
-                # Update APP_VERSION in .py files
+            # Update AppVersion in .py files
             if file_path.endswith(".py"):
                 match = re.search(r'AppVersion = "([\d.]+)"', content)
                 if match:
@@ -48,7 +54,7 @@ def update_version_in_files(file_paths):
                     print(f"Updated AppVersion in {file_path} from {current_version} to {VERSION}")
                 else:
                     print(f"Could not find AppVersion string in {file_path}")
-            
+                
             # Update AppVersion in .iss files
             elif file_path.endswith(".iss"):
                 version_match = re.search(r'AppVersion = ([\d.]+)', content)
@@ -68,6 +74,28 @@ def update_version_in_files(file_paths):
             print(f"Error: {str(e)}")
             sys.exit(1)
 
+def generate_appcast(template_path, output_path, app_name, download_url, executable_path):
+    try:
+        with open(template_path, "r", encoding="utf-8") as template_file:
+            template_content = template_file.read()
+        
+        appcast_content = template_content.replace("{{APP_NAME}}", app_name)
+        appcast_content = appcast_content.replace("{{RELEASES_URL}}", RELEASES_URL)
+        appcast_content = appcast_content.replace("{{RELEASE_NOTES_URL}}", RELEASE_NOTES_URL)
+        appcast_content = appcast_content.replace("{{VERSION}}", VERSION)
+        appcast_content = appcast_content.replace("{{PUB_DATE}}", PUB_DATE)
+        appcast_content = appcast_content.replace("{{DOWNLOAD_URL}}", download_url)
+        appcast_content = appcast_content.replace("{{FILE_SIZE}}", str(os.path.getsize(executable_path)))
+
+        with open(output_path, "w", encoding="utf-8") as output_file:
+            output_file.write(appcast_content)
+        
+        print(f"Generated {output_path}")
+    except IOError as e:
+        print(f"Error generating appcast: {output_path}")
+        print(f"Error: {str(e)}")
+        sys.exit(1)
+
 def main():
     try:
         # Update version in all necessary files
@@ -78,13 +106,22 @@ def main():
             "Server/server.iss"
         ]
         update_version_in_files(files_to_update)
+
         # Build executables
         build_executable("Client/client.spec", CLIENT_NAME, "Client/dist", "Client/build")
         build_executable("Server/server.spec", SERVER_NAME, "Server/dist", "Server/build")
 
+        # Copy WinSparkle.dll to dist directories
+        shutil.copy("Client/WinSparkle.dll", "Client/dist")
+        shutil.copy("Server/WinSparkle.dll", "Server/dist")
+        
         # Create Inno Setup installers
         create_inno_setup("Client/client.iss", CLIENT_NAME)
         create_inno_setup("Server/server.iss", SERVER_NAME)
+
+        # Generate appcast.xml files
+        generate_appcast("appcast_template.xml", "Client/appcast.xml", CLIENT_NAME, DOWNLOAD_URL_CLIENT, "Client/dist/TransferX.exe")
+        generate_appcast("appcast_template.xml", "Server/appcast.xml", SERVER_NAME, DOWNLOAD_URL_SERVER, "Server/dist/TransferXServer.exe")
 
         print("Build process completed successfully!")
     except Exception as e:
