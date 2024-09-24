@@ -1,6 +1,6 @@
 [Setup]
 AppName=TransferX Server
-AppVersion = 0.0.8
+AppVersion = 0.0.7
 DefaultDirName={pf}\TransferX Server
 DefaultGroupName=TransferX Server
 OutputDir=.\App
@@ -12,7 +12,6 @@ AppPublisher=AbdulAhad
 
 [Files]
 Source: "dist\TransferXServer.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "dist\WinSparkle.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\Logo\AppIcon.ico"; DestDir: "{app}\Logo"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
