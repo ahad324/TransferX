@@ -1,5 +1,6 @@
 import webbrowser
 from tkinter import Label, Frame
+import tkinter.font as tkFont
 
 class DeveloperLabel:
     def __init__(self, parent, font, light_theme, dark_theme):
@@ -12,10 +13,13 @@ class DeveloperLabel:
         self.frame = Frame(self.parent)
         self.frame.pack(side='right')  # Changed from 'bottom' to 'right'
 
+        # Create a custom font with underline
+        custom_font = tkFont.Font(family=self.font, size=10, weight="bold", slant="italic", underline=True)
+
         self.label = Label(
             self.frame,
             text="Developed by AbdulAhad",
-            font=(self.font, 10, "bold","italic"),
+            font=custom_font,
             cursor="hand2"
         )
         self.label.pack(side='right', padx=10, pady=5)

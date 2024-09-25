@@ -190,40 +190,39 @@ def create_progress_dialog():
 
 def create_zip_progress_dialog(on_cancel):
     def on_closing():
-
         if messagebox.askokcancel("Cancel Operation", "Are you sure you want to cancel the zipping process?"):
             on_cancel()
             dialog.destroy()
 
     dialog_size = {"width": 400, "height": 350}
     dialog = Toplevel(root)
-    dialog.title("File Compression Progress")
+    dialog.title("Compressing Files")
     dialog.geometry(f"{dialog_size['width']}x{dialog_size['height']}")
     set_window_icon(dialog)
     dialog.transient(root)
     dialog.grab_set()
 
     # Title and Progress Bar
-    Label(dialog, text="File Compression in Progress", font=(FONT, 16)).pack(pady=10)
+    Label(dialog, text="Compressing Your Files...", font=(FONT, 16, "bold")).pack(pady=10)
     progress = ttk.Progressbar(dialog, orient="horizontal", mode="determinate", length=350, style='TProgressbar')
     progress.pack(pady=15)
 
-     # Overall Progress
-    compression_progress_label = Label(dialog, text="Compression Progress: 0%", font=(FONT, 14))
+    # Overall Progress
+    compression_progress_label = Label(dialog, text="Progress: 0%", font=(FONT, 14, "bold"))
     compression_progress_label.pack(pady=5)
-    files_compressed_label = Label(dialog, text="Files Compressed: 0/0", font=(FONT, 14))
+    files_compressed_label = Label(dialog, text="Files Processed: 0/0", font=(FONT, 14))
     files_compressed_label.pack(pady=5)
     
     # Current File Info
     file_info_frame = Frame(dialog)
     file_info_frame.pack(pady=10)
-    file_name_label = Label(file_info_frame, text="Current File: N/A", font=(FONT, 12), wraplength=300)
+    file_name_label = Label(file_info_frame, text="Currently Processing: N/A", font=(FONT, 11), wraplength=350)
     file_name_label.pack()
-    file_size_label = Label(file_info_frame, text="File Size: 0 B", font=(FONT, 12))
+    file_size_label = Label(file_info_frame, text="File Size: N/A", font=(FONT, 11))
     file_size_label.pack()
 
     # Cancel Button
-    cancel_button = Button(dialog, text="Cancel", command=on_closing, font=(FONT, 14), bg=BUTTON_COLOR_DARK, fg=WHITE_COLOR, borderwidth=2, padx=10, pady=5)
+    cancel_button = Button(dialog, text="Stop Compression", command=on_closing, font=(FONT, 14), bg=BUTTON_COLOR_DARK, fg=WHITE_COLOR, borderwidth=0, padx=20, pady=5)
     cancel_button.pack(pady=20)
 
     center_window(dialog, dialog_size["width"], dialog_size["height"])
@@ -315,27 +314,41 @@ def zip_files(file_paths, zip_file_path, on_complete):
         zipped_files = 0
         total_zipped_size = 0
         progress['maximum'] = 100
+        chunk_size = 1024 * 1024  # 1MB chunks
 
         try:
-            with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED, allowZip64=True) as zipf:
                 for i, file in enumerate(file_paths):
                     if cancel_requested:
                         break
 
                     file_name = os.path.basename(file)
                     file_size = os.path.getsize(file)
-                    file_name_label.config(text=f"Current File: {file_name}")
+                    file_name_label.config(text=f"Currently Processing: {file_name}")
                     file_size_label.config(text=f"File Size: {format_size(file_size)}")
 
                     with open(file, 'rb') as f:
-                        zipf.writestr(file_name, f.read(), zipfile.ZIP_DEFLATED)
+                        zinfo = zipfile.ZipInfo.from_file(file, file_name)
+                        zinfo.compress_type = zipfile.ZIP_DEFLATED
+                        with zipf.open(zinfo, mode='w') as dest:
+                            file_zipped_size = 0
+                            while True:
+                                if cancel_requested:
+                                    break
+                                chunk = f.read(chunk_size)
+                                if not chunk:
+                                    break
+                                dest.write(chunk)
+                                file_zipped_size += len(chunk)
+                                total_zipped_size += len(chunk)
+                                
+                                overall_progress = (total_zipped_size / total_size) * 100
+                                progress['value'] = overall_progress
+                                compression_progress_label.config(text=f"Progress: {overall_progress:.1f}%")
+                                root.update_idletasks()
 
                     zipped_files += 1
-                    total_zipped_size += file_size
-                    overall_progress = (total_zipped_size / total_size) * 100
-                    progress['value'] = overall_progress
-                    compression_progress_label.config(text=f"Overall Progress: {overall_progress:.1f}%")
-                    files_compressed_label.config(text=f"Files Compressed: {zipped_files}/{total_files}")
+                    files_compressed_label.config(text=f"Files Processed: {zipped_files}/{total_files}")
                     root.update_idletasks()
 
         except Exception as e:
@@ -352,7 +365,6 @@ def zip_files(file_paths, zip_file_path, on_complete):
             on_complete(zip_file_path)
 
     Thread(target=zip_thread, daemon=True).start()
-    
 def submit_file(file_path, roll_no):
     def start_upload():
         MAX_RETRIES = 3
