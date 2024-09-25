@@ -300,7 +300,7 @@ def create_settings_dialog():
     return dialog
 
 # File Operations
-def zip_files(file_paths, zip_file_path,on_complete):
+def zip_files(file_paths, zip_file_path, on_complete):
     def zip_thread():
         def on_cancel():
             nonlocal cancel_requested
@@ -311,58 +311,48 @@ def zip_files(file_paths, zip_file_path,on_complete):
         dialog, progress, file_name_label, file_size_label, files_compressed_label, compression_progress_label = create_zip_progress_dialog(on_cancel)
 
         total_files = len(file_paths)
+        total_size = sum(os.path.getsize(file) for file in file_paths)
         zipped_files = 0
-        chunk_size = int(chunk_size_var.get())
+        total_zipped_size = 0
         progress['maximum'] = 100
 
         try:
-            with zipfile.ZipFile(zip_file_path, 'w') as zipf:
+            with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 for i, file in enumerate(file_paths):
                     if cancel_requested:
                         break
 
-                    file_name_label.config(text=f"Current File: {os.path.basename(file)}")
+                    file_name = os.path.basename(file)
                     file_size = os.path.getsize(file)
+                    file_name_label.config(text=f"Current File: {file_name}")
                     file_size_label.config(text=f"File Size: {format_size(file_size)}")
-                    files_compressed_label.config(text=f"Files Compressed: {zipped_files}/{total_files}")
-
-                    file_sent = 0
-                    last_percentage = 0
 
                     with open(file, 'rb') as f:
-                        buf = io.BufferedReader(f, buffer_size=chunk_size)
-                        while not cancel_requested:
-                            chunk = buf.read(chunk_size)
-                            if not chunk:
-                                break
-
-                            zipf.writestr(os.path.basename(file), chunk)
-                            file_sent += len(chunk)
-
-                            percentage = (file_sent / file_size) * 100
-                            if int(percentage) != last_percentage:
-                                progress['value'] = percentage
-                                compression_progress_label.config(text=f"Compression Progress: {percentage:.2f}%")
-                                root.update_idletasks()
-                                last_percentage = int(percentage)
+                        zipf.writestr(file_name, f.read(), zipfile.ZIP_DEFLATED)
 
                     zipped_files += 1
+                    total_zipped_size += file_size
+                    overall_progress = (total_zipped_size / total_size) * 100
+                    progress['value'] = overall_progress
+                    compression_progress_label.config(text=f"Overall Progress: {overall_progress:.1f}%")
                     files_compressed_label.config(text=f"Files Compressed: {zipped_files}/{total_files}")
+                    root.update_idletasks()
 
         except Exception as e:
             if cancel_requested:
                 os.remove(zip_file_path)
                 messagebox.showinfo("Cancelled", "The zipping process was cancelled.")
             else:
-                messagebox.showinfo("Error", f"An error occurred: {str(e)}")
+                messagebox.showerror("Error", f"An error occurred: {str(e)}")
+            return
 
         if not cancel_requested:
             dialog.destroy()
             messagebox.showinfo("Complete", "File compression completed successfully.")
             on_complete(zip_file_path)
-            
-    Thread(target=zip_thread,daemon=True).start()
 
+    Thread(target=zip_thread, daemon=True).start()
+    
 def submit_file(file_path, roll_no):
     def start_upload():
         MAX_RETRIES = 3
