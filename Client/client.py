@@ -21,7 +21,6 @@ DEFAULT_SERVER_PORT = 5000
 DEFAULT_CHUNK_SIZE = 8192
 DELIMITER = "---END-HEADER---"
 FONT = 'Segoe UI'
-PASSWORD = "ahad"
 TIMEOUT = 10
 discovery_stop_event = Event()
 
@@ -621,34 +620,7 @@ def update_connection_status(message, color):
     dynamic_status_label.config(text=message, fg=color)
 
 def open_settings():
-    ask_for_password()
-
-def ask_for_password():
-    def verify_password():
-        entered_password = password_var.get()
-        if entered_password == PASSWORD:
-            password_dialog.destroy()
-            create_settings_dialog()
-        else:
-            messagebox.showerror("Error", "Incorrect password")
-
-    dialog_size = {"width":300,"height":150}
-    password_dialog = Toplevel(root)
-    password_dialog.title("Password Required")
-    password_dialog.geometry(f"{dialog_size['width']}x{dialog_size['height']}")
-    set_window_icon(password_dialog)
-    password_dialog.transient(root)
-    password_dialog.grab_set()
-
-    Label(password_dialog, text="Enter Password:", font=(FONT, 14)).pack(pady=10)
-    password_var = StringVar()
-    password_entry = Entry(password_dialog, textvariable=password_var, show='*', font=(FONT, 14))
-    password_entry.pack(pady=5)
-    
-    Button(password_dialog, text="Submit", command=verify_password, font=(FONT, 14), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=2, padx=10, pady=5).pack(pady=10)
-
-    center_window(password_dialog, dialog_size["width"], dialog_size["height"])
-    password_entry.focus_set()
+    create_settings_dialog()
 
 # Validation Functions
 def is_valid_ip(ip):
