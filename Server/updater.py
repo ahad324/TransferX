@@ -65,16 +65,16 @@ def apply_update(update_file):
         try:
             set_update_status("Installing update...")
             batch_content = f"""
-@echo off
-:retry
-taskkill /F /IM {APP_NAME}.exe
-if %errorlevel% neq 0 (
-    timeout /t 2
-    goto retry
-)
-move /Y "{update_file}" "{APP_NAME}.exe"
-start "" "{APP_NAME}.exe"
-del "%~f0"
+            @echo off
+            :retry
+            taskkill /F /IM {APP_NAME}.exe
+            if %errorlevel% neq 0 (
+                timeout /t 2
+                goto retry
+            )
+            move /Y "{update_file}" "{APP_NAME}.exe"
+            start "" "{APP_NAME}.exe"
+            del "%~f0"
             """
             with open("update.bat", "w") as batch_file:
                 batch_file.write(batch_content)
@@ -108,7 +108,7 @@ def update_app():
         set_update_status(f"New version {update_info['tag_name']} available.")
         show_update_notification(update_info['tag_name'])
         update_file = download_update(update_info['assets'][1]['browser_download_url'])
-        if update_file:
+        if messagebox.askyesno("Update Ready", "The update is ready to install. The application will close and restart. Do you want to proceed?"):
             apply_update(update_file)
     else:
         set_update_status(f"Version {AppVersion}")
