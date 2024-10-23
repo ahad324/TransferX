@@ -27,14 +27,14 @@ discovery_stop_event = Event()
 # Colors
 WHITE_COLOR = 'white'
 BLACK_COLOR = 'black'
-BG_COLOR_LIGHT = '#F0F2F5'
-BG_COLOR_DARK = '#161718'
-BUTTON_COLOR_LIGHT = '#007BFF'
-BUTTON_COLOR_DARK = '#0056b3'
+BG_COLOR_LIGHT = '#f9fafb'
+BG_COLOR_DARK = '#111827'
+BUTTON_COLOR_LIGHT = '#6366f1'
+BUTTON_COLOR_DARK = '#818cf8'
 ENTRY_BG_COLOR = WHITE_COLOR
 ENTRY_FG_COLOR = '#212529'
 PROGRESSBAR_COLOR = '#28A745'
-BUTTON_HOVER_COLOR = '#0056b3'
+BUTTON_HOVER_COLOR = '#8b5cf6'
 DRAG_HOVER_COLOR = "#D3E3FF"
 ERROR_COLOR = "red"
 SUCCESS_COLOR = "green"
@@ -727,7 +727,7 @@ select_button.pack(pady=30)
 select_button.bind("<Enter>", lambda e: select_button.config(bg=BUTTON_HOVER_COLOR))
 select_button.bind("<Leave>", lambda e: select_button.config(bg=BUTTON_COLOR_LIGHT))
 # Updater Label
-updater.update_status_label = Label(root, text=f"Version {updater.AppVersion}", font=(FONT, 12,"italic"))
+updater.update_status_label = Label(root, text=f"version {updater.AppVersion}", font=(FONT, 12,"italic"))
 updater.update_status_label.pack(pady=5)
 
 settings_button = Button(root, text="⚙️ Settings", command=open_settings, font=(FONT, 12), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=0, padx=10, pady=5)

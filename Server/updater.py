@@ -100,7 +100,7 @@ def show_update_notification(version):
 
 def update_app():
     if not is_connected():
-        set_update_status(f"No internet connection. Version {AppVersion}")
+        set_update_status(f"No internet connection. version {AppVersion}")
         return
     
     update_info = check_for_updates()
@@ -111,7 +111,7 @@ def update_app():
         if messagebox.askyesno("Update Ready", "The update is ready to install. The application will close and restart. Do you want to proceed?"):
             apply_update(update_file)
     else:
-        set_update_status(f"Version {AppVersion}")
+        set_update_status(f"version {AppVersion}")
 
 def check_updates_async():
     threading.Thread(target=update_app, daemon=True).start()
