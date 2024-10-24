@@ -5,7 +5,7 @@ import os
 iconpath = '../Logo/logo.ico'
 
 a = Analysis(
-    ['server.py', 'mdns_connect.py','developer_label.py'],
+    ['server.py','utility.py', 'mdns_connect.py','developer_label.py'],
     pathex=[os.path.dirname(os.path.abspath(__name__))],
     binaries=[],
     datas=[(iconpath, 'Logo')],  # Include logo

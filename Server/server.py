@@ -1,78 +1,112 @@
-import socket, sqlite3, re, os, sys, logging, json, io
+import socket
+import sqlite3
+import re
+import os
+import sys
+import logging
+import json
+import io
 from pathlib import Path
+from utility import get_downloads_folder, ensure_base_dir_exists, sanitize_filename, is_valid_ip, is_valid_port, is_valid_chunk_size, set_window_icon
 from threading import Thread, Event
 import tkinter as tk
 from tkinter import scrolledtext, messagebox, ttk, font, Label, Frame
 
 import mdns_connect
-# Determine the user's Downloads folder path
-def get_downloads_folder():
-    if sys.platform == "win32":
-        return Path(os.environ['USERPROFILE']) / 'Downloads'
-    elif sys.platform == "darwin":
-        return Path.home() / 'Downloads'
-    elif sys.platform == "linux":
-        return Path.home() / 'Downloads'
-    else:
-        return Path.home()
-
-# Determine the base directory for file operations
-if getattr(sys, 'frozen', False):
-    CURRENT_DIR = Path(sys._MEIPASS)
-    BASE_DIR = get_downloads_folder() / 'TransferX Server'
-else:
-    CURRENT_DIR = Path(__file__).parent
-    BASE_DIR = CURRENT_DIR
-    
-def ensure_base_dir_exists():
-    if not os.path.exists(BUCKET_DIR):
-        os.makedirs(BUCKET_DIR, exist_ok=True)
-        logger.info(f"📂 Storage directory created: {BUCKET_DIR}")
-        append_log(f"📂 Storage directory created: {BUCKET_DIR}")
 
 # Constants
 SERVER_IP = '0.0.0.0'
 SERVER_PORT = 5000
 CHUNK_SIZE = 8192
 DELIMITER = "---END-HEADER---"
+FONT = "Segoe UI"
+
+# File paths
+if getattr(sys, 'frozen', False):
+    CURRENT_DIR = Path(sys._MEIPASS)
+    BASE_DIR = get_downloads_folder() / 'TransferX Server'
+else:
+    CURRENT_DIR = Path(__file__).parent
+    BASE_DIR = CURRENT_DIR
+
 DB_FILE = os.path.join(BASE_DIR, 'server_data.db')
 LOG_FILE = os.path.join(BASE_DIR, 'server.log')
 BUCKET_DIR = os.path.join(BASE_DIR, 'bucket_storage')
-FONT = "Segoe UI"
 
 # Define colors
-DARK_BG_COLOR = '#161718'
-LIGHT_BG_COLOR = '#F0F2F5'
+DARK_BG_COLOR = '#111827'
+LIGHT_BG_COLOR = '#f9fafb'
 
 # Server control flags
 server_running = False
 stop_event = Event()
 connections = []  # Track active connections
 
-# To set the icon on every window
-def set_window_icon(window):
-    current_dir = sys._MEIPASS if getattr(sys, 'frozen', False) else os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-    logo_path = os.path.join(current_dir, 'Logo', 'logo.ico')
-    window.iconbitmap(logo_path)
+# Initialize logging
+def setup_logging():
+    global logger
+    logger = logging.getLogger('server')
+    logger.setLevel(logging.INFO)
 
-# Functions to append text to mdns and Logs
+    log_dir = os.path.dirname(LOG_FILE)
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir, exist_ok=True)
+
+    file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
+    file_handler.setLevel(logging.INFO)
+
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+    
+# Initialize the database
+def init_db():
+    ensure_base_dir_exists(BASE_DIR)  # Ensure the base directory exists
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS files (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        filename TEXT NOT NULL,
+                        file_size INTEGER NOT NULL,
+                        saved_path TEXT NOT NULL,
+                        received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                      )''')
+    conn.commit()
+    conn.close()
+
+def log_file_to_db(filename, file_size, saved_path):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO files (filename, file_size, saved_path) VALUES (?, ?, ?)",
+                   (filename, file_size, saved_path))
+    conn.commit()
+    conn.close()
+    
+# Functions to append text to logs
 def append_mdns_log(message):
     def update_log():
         mdns_log_text.insert(tk.END, message + "\n")
         mdns_log_text.yview(tk.END)
     root.after(0, update_log)
+
 def append_log(message):
-    log_text.insert(tk.END,message+"\n")
+    log_text.insert(tk.END, message + "\n")
     log_text.yview(tk.END)
-    
-# Initialize the Tkinter root window
+
+# Tkinter GUI Setup
 root = tk.Tk()
 root.title("TransferX Server Panel")
 root.geometry("800x630")
 root.minsize(300, 300)
 set_window_icon(root)
 root.configure(bg=DARK_BG_COLOR)
-root.option_add("*Font", font.Font(family=FONT)) # Apply the font globally
+root.option_add("*Font", font.Font(family=FONT))
 
 # Tkinter variables
 connection_count_var = tk.IntVar(value=0)
@@ -81,18 +115,18 @@ data_received_var = tk.IntVar(value=0)
 chunk_size_var = tk.IntVar(value=CHUNK_SIZE)
 server_ip_var = tk.StringVar(value=SERVER_IP)
 server_port_var = tk.IntVar(value=SERVER_PORT)
-directory_var = tk.StringVar(value=BUCKET_DIR+"/")
+directory_var = tk.StringVar(value=BUCKET_DIR + "/")
 
 # Style for the notebook tabs
 style = ttk.Style()
-style.configure("TNotebook.Tab", padding=[20, 10],font=(FONT,12,"bold"))
+style.configure("TNotebook.Tab", padding=[20, 10], font=(FONT, 12, "bold"))
 
 # Create a notebook with tabs
 notebook = ttk.Notebook(root)
 notebook.pack(pady=20, expand=True, fill="both")
 
 # Frames for notebook tabs
-log_frame = tk.Frame(notebook,padx=20)
+log_frame = tk.Frame(notebook, padx=20)
 log_frame.pack(fill=tk.BOTH, expand=True)
 notebook.add(log_frame, text="Logs")
 
@@ -107,7 +141,7 @@ settings_frame = tk.Frame(notebook)
 notebook.add(settings_frame, text="Settings")
 
 # Create and pack the log text area
-log_text = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD,bg=LIGHT_BG_COLOR,height=20,font=("Courier",10))
+log_text = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD, bg=LIGHT_BG_COLOR, height=20, font=("Courier", 10))
 log_text.grid(row=0, column=0, sticky='nsew')
 log_frame.grid_rowconfigure(0, weight=1)
 log_frame.grid_columnconfigure(0, weight=1)
@@ -123,9 +157,11 @@ append_mdns_log("MDNS Connection logs will appear here...")
 # Status frame content
 status_frame.grid_columnconfigure(0, weight=1)
 status_frame.grid_columnconfigure(1, weight=1)
+
 def create_status_label(frame, text, variable, row):
     tk.Label(frame, text=text, font=(FONT, 12, "bold")).grid(row=row, column=0, padx=20, pady=10)
     tk.Label(frame, textvariable=variable).grid(row=row, column=1, padx=20, pady=10)
+
 # Define labels
 status_labels = [
     ("Active Connections:", connection_count_var),
@@ -164,8 +200,7 @@ for label_text, text_var, row in entry_widgets:
 # Make the second column expandable
 settings_frame.grid_columnconfigure(1, weight=1)
 
-
-apply_button = tk.Button(settings_frame, text="Apply", command=lambda:apply_settings(), height=2, width=10,bg="#4CAF50", fg="white", relief="raised",font=(FONT,10,"bold"))
+apply_button = tk.Button(settings_frame, text="Apply", command=lambda: apply_settings(), height=2, width=10, bg="#4CAF50", fg="white", relief="raised", font=(FONT, 10, "bold"))
 apply_button.grid(row=4, column=0, columnspan=2, padx=20, pady=20, sticky="n")
 
 # Button frame for server control
@@ -184,79 +219,6 @@ restart_button.pack(side=tk.LEFT, padx=20)
 
 clear_button = tk.Button(button_frame, text="Clear Logs", command=lambda: clear_logs(), height=2, width=10)
 clear_button.pack(side=tk.LEFT, padx=20)
-        
-# Setup logging configuration
-def setup_logging():
-    global logger
-    logger = logging.getLogger('server')
-    logger.setLevel(logging.INFO)
-
-    # Ensure the log directory exists
-    log_dir = os.path.dirname(LOG_FILE)
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir, exist_ok=True)
-        
-    # Create file and console handlers
-    file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
-    file_handler.setLevel(logging.INFO)
-    
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-
-    # Formatter for handlers
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    file_handler.setFormatter(formatter)
-    console_handler.setFormatter(formatter)
-
-    # Add handlers to logger
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
-
-# Initialize logging
-setup_logging()
-
-# Function for IP validation
-def is_valid_ip(ip):
-    try:
-        socket.inet_aton(ip)
-        return True
-    except socket.error:
-        return False
-    
-# Function for port validation
-def is_valid_port(port):
-    return 0 <= port <= 65535
-
-# Function for chunk size validation
-def is_valid_chunk_size(size):
-    return size > 0
-
-# Database initialization
-def init_db():
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS files (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        filename TEXT NOT NULL,
-                        file_size INTEGER NOT NULL,
-                        saved_path TEXT NOT NULL,
-                        received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                      )''')
-    conn.commit()
-    conn.close()
-    
-# Function to log file to database
-def log_file_to_db(filename, file_size, saved_path):
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO files (filename, file_size, saved_path) VALUES (?, ?, ?)",
-                   (filename, file_size, saved_path))
-    conn.commit()
-    conn.close()
-    
-# Function to sanitize the filename to avoid "Directory Traversal attack"
-def sanitize_filename(filename):
-    return re.sub(r'[<>:"/\\|?*]', '', filename)
 
 # Function to handle client
 def handle_client(client_socket, log_text, addr):
@@ -279,16 +241,16 @@ def handle_client(client_socket, log_text, addr):
             new_file_path = f"{base}({counter}){extension}"
             counter += 1
         return new_file_path
-    
+
     def get_file_size(file_path):
-            return os.path.getsize(file_path) if os.path.exists(file_path) else 0
+        return os.path.getsize(file_path) if os.path.exists(file_path) else 0
 
     try:
         # Receive header data
         header_data = receive_until_delimiter(DELIMITER)
         if not header_data:
-            logger.error("❌ Header data not received.This might be a discovery request.")
-            append_log("❌ Header data not received.This might be a discovery request.")
+            logger.error("❌ Header data not received. This might be a discovery request.")
+            append_log("❌ Header data not received. This might be a discovery request.")
             client_socket.sendall(b'Header data not received.')  # Send error response
             return
 
@@ -319,16 +281,15 @@ def handle_client(client_socket, log_text, addr):
             client_socket.sendall(b'Error processing metadata.')  # Send error response
             return
 
-
         # Ensure the bucket directory exists
         if not os.path.exists(BUCKET_DIR):
-            ensure_base_dir_exists()
+            ensure_base_dir_exists(BUCKET_DIR)
 
         file_path = os.path.join(BUCKET_DIR, sanitize_filename(filename))
         file_path = get_unique_filename(file_path)  # Ensure unique filename
         logger.info(f"💾 Saving file to: {file_path}")
         append_log(f"💾 Saving file to: {file_path}")
-        
+
         # Check if the file already exists and get its size
         bytes_received = get_file_size(file_path)
         client_socket.sendall(f"{bytes_received}".encode('utf-8'))  # Send the current size to the client
@@ -358,7 +319,7 @@ def handle_client(client_socket, log_text, addr):
             logger.error(f"{'⚠️' * 5} Error during file transfer: {str(e)}")
             append_log(f"{'⚠️' * 5} Error during file transfer: {str(e)}")
             client_socket.sendall(b'Error during file transfer.\n')
-            
+
     except Exception as e:
         logger.error(f"{'❗' * 5} Error handling client: {str(e)}")
         append_log(f"{'❗' * 5} Error handling client: {str(e)}")
@@ -369,7 +330,8 @@ def handle_client(client_socket, log_text, addr):
         logger.info(f"✅ Connection with {addr} is closed!")
         append_log(f"✅ Connection with {addr} is closed!")
         connection_count_var.set(len(connections))
-# Function to log the session summar from start to stop of server
+
+# Function to log the session summary from start to stop of server
 def log_session_summary():
     session_table = (
         "✨📊  Session Summary  📊✨\n"
@@ -383,11 +345,10 @@ def log_session_summary():
         f"🔚 {'=' * 42} 🔚\n"
     )
 
-    # Log the session summary
     logger.info(session_table)
     append_log(session_table)
 
-# Function to Log Settings when settings applied
+# Function to log settings when settings applied
 def log_settings_summary(ip, port, chunk_size, bucket_dir):
     settings_table = (
         "⚙️  Settings applied:\n"
@@ -403,8 +364,8 @@ def log_settings_summary(ip, port, chunk_size, bucket_dir):
 
     logger.info(settings_table)
     append_log(settings_table)
-    
-# Function to Log a separator for better UI
+
+# Function to log a separator for better UI
 def log_separator(context):
     separator = (
         f"\n🟡 <{'-' * 25} {context} {'-' * 25}> 🟡\n"
@@ -437,7 +398,7 @@ def start_server():
 
             file_count_var.set(0)
             data_received_var.set(0)
-            
+
             start_button.config(state=tk.DISABLED)
             stop_button.config(state=tk.NORMAL)
             restart_button.config(state=tk.NORMAL)
@@ -447,11 +408,11 @@ def start_server():
             append_log(f"|{'=' * 20 } 📡 Server started on {ip}:{port} {'=' * 20 }|")
             # Start the mDNS server
             zeroconf, mdns_info, mdns_browser = mdns_connect.start_mdns_listener(BASE_DIR, append_mdns_log, port)
-            
+
         except socket.error as e:
             if e.errno == 10048:
                 logger.error(f"⚠️ Port {port} is already in use.")
-                append_log( f"⚠️ Port {port} is already in use.")
+                append_log(f"⚠️ Port {port} is already in use.")
                 messagebox.showerror("⚠️ Port Error", f"Port {port} is already in use.")
             else:
                 logger.error(f"❌ Failed to start server: {e}")
@@ -460,7 +421,7 @@ def start_server():
         logger.warning(f"⚠️ Server is already running.")
         append_log(f"⚠️ Server is already running.")
 
-# Function for accepting the clients connections
+# Function for accepting client connections
 def accept_connections():
     while not stop_event.is_set():
         try:
@@ -484,13 +445,13 @@ def stop_server():
         messagebox.showwarning("⚠️ Server not running", "The server is not currently running.")
         return
     # Stop the mDNS server
-    mdns_connect.stop_mdns_listener(zeroconf, mdns_info,mdns_browser)
+    mdns_connect.stop_mdns_listener(zeroconf, mdns_info, mdns_browser)
     server_running = False
     stop_event.set()
 
     for conn in connections:
         conn.close()
-        
+
     connections.clear()
     connection_count_var.set(0)
 
@@ -520,27 +481,27 @@ def restart_server():
     append_log("🔄 Restarting the server...")
     stop_server()
     root.after(1000, start_server)
-    
+
 # Function to clear the logs
 def clear_logs():
     log_text.delete('1.0', tk.END)
-    mdns_log_text.delete('1.0',tk.END)
+    mdns_log_text.delete('1.0', tk.END)
 
 def on_closing():
     if server_running:
         messagebox.showinfo("Quit", "The server is still running. Please stop it first.")
     else:
         root.destroy()
- 
+
 # Apply settings function       
 def apply_settings():
     global SERVER_IP, SERVER_PORT, CHUNK_SIZE, BUCKET_DIR
-    
+
     new_ip = server_ip_var.get()
     new_port = server_port_var.get()
     new_chunk_size = chunk_size_var.get()
     new_dir = directory_var.get()
-    
+
     if not is_valid_ip(new_ip):
         messagebox.showerror("Invalid IP", "The provided IP address is invalid.")
         return
@@ -557,22 +518,23 @@ def apply_settings():
     SERVER_PORT = new_port
     CHUNK_SIZE = new_chunk_size
     BUCKET_DIR = new_dir
-    
-    ensure_base_dir_exists()
-        
+
+    ensure_base_dir_exists(BUCKET_DIR)
+
     messagebox.showinfo("Settings", "Settings updated successfully.")
-    
-    log_settings_summary(new_ip,new_port,new_chunk_size,new_dir)
+
+    log_settings_summary(new_ip, new_port, new_chunk_size, new_dir)
 
     if server_running:
         restart_server()
-        
+
 # Initialize the database
 init_db()
 # Create the base directory if it doesn't exist
-ensure_base_dir_exists()
+ensure_base_dir_exists(BUCKET_DIR)
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
+
 # Create bottom frame
 from developer_label import create_developer_label
 bottom_frame = Frame(root, bg=DARK_BG_COLOR)
@@ -583,11 +545,11 @@ website_frame = Frame(bottom_frame, bg=DARK_BG_COLOR)
 website_frame.pack(side='left')
 
 # Official Website Label
-official_website_label = Label(website_frame, text="Official Website:", font=(FONT, 12, "italic","bold"), bg=DARK_BG_COLOR, fg="white")
+official_website_label = Label(website_frame, text="Official Website:", font=(FONT, 12, "italic", "bold"), bg=DARK_BG_COLOR, fg="white")
 official_website_label.pack(side='left')
 
 # Clickable Website Link
-website_link = Label(website_frame, text="transferx.netlify.app", font=(FONT, 12, "italic","underline"), bg=DARK_BG_COLOR, fg="white", cursor="hand2")
+website_link = Label(website_frame, text="transferx.netlify.app", font=(FONT, 12, "italic", "underline"), bg=DARK_BG_COLOR, fg="white", cursor="hand2")
 website_link.pack(side='left')
 
 # Function to open the website
@@ -598,10 +560,6 @@ def open_website(event):
 # Bind the click event to the website link
 website_link.bind("<Button-1>", open_website)
 
-
-# Import and use the DeveloperLabel class
-from developer_label import create_developer_label
-
 # Create developer label (right side)
 developer_label = create_developer_label(
     bottom_frame,
@@ -609,5 +567,7 @@ developer_label = create_developer_label(
     light_theme={'bg': DARK_BG_COLOR, 'fg': 'white'},
     dark_theme={'bg': DARK_BG_COLOR, 'fg': 'white'}
 )
+
 # Run the Tkinter main loop
+setup_logging()
 root.mainloop()

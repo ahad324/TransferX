@@ -7,8 +7,9 @@ import zipfile
 import io
 import re
 from pathlib import Path
+from utility import get_downloads_folder, ensure_base_dir_exists, set_window_icon, center_window, sanitize_filename, format_size, is_valid_ip, is_valid_port, is_valid_chunk_size
 from threading import Thread, Event
-from tkinter import Frame, ttk, Button, filedialog, messagebox, Label, Entry, StringVar, Toplevel, font, Listbox
+from tkinter import Frame, ttk, Button, filedialog, messagebox, Label, Entry, StringVar, Toplevel, font
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 import mdns_connect
@@ -38,41 +39,13 @@ DRAG_HOVER_COLOR = "#D3E3FF"
 ERROR_COLOR = "red"
 SUCCESS_COLOR = "green"
 
-# Utility Functions
-def get_downloads_folder():
-    if sys.platform == "win32":
-        return Path(os.environ['USERPROFILE']) / 'Downloads'
-    elif sys.platform in ["darwin", "linux"]:
-        return Path.home() / 'Downloads'
-    else:
-        return Path.home()
-
-def ensure_base_dir_exists():
-    if not BASE_DIR.exists():
-        BASE_DIR.mkdir(parents=True, exist_ok=True)
-
-def set_window_icon(window):
-    current_dir = sys._MEIPASS if getattr(sys, 'frozen', False) else os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-    logo_path = os.path.join(current_dir, 'Logo', 'logo.ico')
-    window.iconbitmap(logo_path)
-
-def center_window(window, width, height):
-    screen_width = window.winfo_screenwidth()
-    screen_height = window.winfo_screenheight()
-    position_top = int(screen_height / 2 - height / 2)
-    position_right = int(screen_width / 2 - width / 2)
-    window.geometry(f'{width}x{height}+{position_right}+{position_top}')
-
-def sanitize_filename(filename):
-    return re.sub(r'[<>:"/\\|?*]', '', filename)
-
-def format_size(size):
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-        if size < 1024.0:
-            return f"{size:.2f} {unit}"
-        size /= 1024.0
-    return f"{size:.2f} PB"
-
+if getattr(sys, 'frozen', False):
+    CURRENT_DIR = Path(sys._MEIPASS)
+    BASE_DIR = get_downloads_folder() / 'TransferX'
+else:
+    CURRENT_DIR = Path(__file__).parent
+    BASE_DIR = CURRENT_DIR
+    
 class ThemeManager:
     def __init__(self, root, developer_label):
         self.root = root
@@ -112,13 +85,13 @@ class ThemeManager:
             self.set_light_theme()
             self.theme = 'light'
         self.root.update_idletasks()
-    
+
     def update_bluish_elements(self, text_color):
         # Update all elements with bluish background to have white text
         for widget in [theme_button, auto_connect_button, select_button, settings_button]:
             widget.config(fg=text_color)
-        
-    # Method to update specific frame background
+            
+        # Method to update specific frame background
     def update_frame_background(self, frame):
         if self.theme == 'light':
             frame.config(bg=BG_COLOR_LIGHT)
@@ -363,6 +336,7 @@ def zip_files(file_paths, zip_file_path, on_complete):
             on_complete(zip_file_path)
 
     Thread(target=zip_thread, daemon=True).start()
+
 def submit_file(file_path, roll_no):
     def start_upload():
         MAX_RETRIES = 3
@@ -472,7 +446,7 @@ def submit_file(file_path, roll_no):
         Thread(target=upload_file).start()
 
     show_file_metadata([file_path], start_upload)
-    
+
 # Server Discovery and Connection
 def start_server_discovery(ip=None):
     global discovery_stop_event
@@ -621,33 +595,11 @@ def update_connection_status(message, color):
 def open_settings():
     create_settings_dialog()
 
-# Validation Functions
-def is_valid_ip(ip):
-    parts = ip.split('.')
-    if len(parts) != 4:
-        return False
-    for part in parts:
-        if not part.isdigit() or not 0 <= int(part) <= 255:
-            return False
-    return True
-
-def is_valid_port(port):
-    return 0 <= port <= 65535
-
-def is_valid_chunk_size(size):
-    return size > 0
-
 # Main Application Setup
-if getattr(sys, 'frozen', False):
-    CURRENT_DIR = Path(sys._MEIPASS)
-    BASE_DIR = get_downloads_folder() / 'TransferX'
-else:
-    CURRENT_DIR = Path(__file__).parent
-    BASE_DIR = CURRENT_DIR
 
-ensure_base_dir_exists()
+ensure_base_dir_exists(BASE_DIR)
 
-root_windows_size = {"width":800,"height":600}
+root_windows_size = {"width": 800, "height": 600}
 root = TkinterDnD.Tk()
 root.title("TransferX")
 root.geometry(f"{root_windows_size['width']}x{root_windows_size['height']}")
@@ -655,38 +607,47 @@ root.minsize(300, 300)
 set_window_icon(root)
 root.option_add("*Font", font.Font(family=FONT))
 
+# Bottom Frame
 bottom_frame = Frame(root)
 bottom_frame.pack(side='bottom', fill='x', padx=5, pady=5)
 
+# Status Labels
 status_left_frame = Frame(bottom_frame)
 status_left_frame.pack(side='left')
 
 static_status_label = Label(status_left_frame, text="Server Connection Status:", font=(FONT, 16, "bold"), fg=BLACK_COLOR, anchor='w')
 static_status_label.pack(side='left')
-dynamic_status_label = Label(status_left_frame, text="Disconnected", font=(FONT, 16,"bold"), fg=ERROR_COLOR, anchor='w')
+dynamic_status_label = Label(status_left_frame, text="Disconnected", font=(FONT, 16, "bold"), fg=ERROR_COLOR, anchor='w')
 dynamic_status_label.pack(side='left')
 
+# Developer Label
 developer_label = create_developer_label(
     bottom_frame,
     FONT,
     light_theme={'bg': BG_COLOR_LIGHT, 'fg': BLACK_COLOR},
     dark_theme={'bg': BG_COLOR_DARK, 'fg': WHITE_COLOR}
 )
-# Create an instance of ThemeManager
+
+# Theme Manager
 theme_manager = ThemeManager(root, developer_label)
 
+# Server Configuration
 server_ip_var = StringVar(value=DEFAULT_SERVER_IP)
 server_port_var = StringVar(value=DEFAULT_SERVER_PORT)
 chunk_size_var = StringVar(value=DEFAULT_CHUNK_SIZE)
 roll_no_var = StringVar()
-root.after(0,center_window(root, root_windows_size["width"], root_windows_size["height"]))
 
+# Center Window
+root.after(0, center_window(root, root_windows_size["width"], root_windows_size["height"]))
+
+# Style Configuration
 style = ttk.Style()
 style.configure('TButton', font=(FONT, 12), padding=10, relief='flat', background=BUTTON_COLOR_LIGHT)
 style.configure('TLabel', font=(FONT, 16), padding=10)
 style.configure('TEntry', font=(FONT, 18), padding=10, relief='raised')
 style.configure('TProgressbar', thickness=30, troughcolor='#D3D3D3')
 
+# UI Elements
 theme_button = Button(root, text="🌙", command=theme_manager.toggle_theme, font=(FONT, 12), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=0, padx=10, pady=5)
 theme_button.place(relx=1, rely=0, anchor='ne')
 theme_button.bind("<Enter>", lambda e: theme_button.config(bg=BUTTON_HOVER_COLOR))
@@ -707,15 +668,16 @@ auto_connect_button.place(relx=0.0, rely=0.0, anchor='nw')
 auto_connect_button.bind("<Enter>", lambda e: auto_connect_button.config(bg=BUTTON_HOVER_COLOR))
 auto_connect_button.bind("<Leave>", lambda e: auto_connect_button.config(bg=BUTTON_COLOR_LIGHT))
 
-roll_no_label = Label(root, text="Enter your Roll Number:", anchor="center", font=(FONT, 18,"bold"))
+roll_no_label = Label(root, text="Enter your Roll Number:", anchor="center", font=(FONT, 18, "bold"))
 roll_no_label.pack(pady=(100, 5))
-roll_no_entry = Entry(root, textvariable=roll_no_var, width=30, justify='center',borderwidth=2, relief="solid", highlightthickness=2,font=(FONT, 18), bg=ENTRY_BG_COLOR, fg=ENTRY_FG_COLOR)
+roll_no_entry = Entry(root, textvariable=roll_no_var, width=30, justify='center', borderwidth=2, relief="solid", highlightthickness=2, font=(FONT, 18), bg=ENTRY_BG_COLOR, fg=ENTRY_FG_COLOR)
 roll_no_entry.config(highlightcolor='#007BFF', highlightbackground="#BDBDBD", relief="flat")
 roll_no_entry.pack(pady=(5, 10))
 
 instructions = Label(root, text="Drag and drop files here or click 'Select Files' to upload.\nIf multiple files are selected, they will be zipped.", font=(FONT, 18), wraplength=750, justify="center")
 instructions.pack(pady=20)
 
+# Drag and Drop Configuration
 root.drop_target_register(DND_FILES)
 root.dnd_bind('<<Drop>>', on_drop)
 root.dnd_bind('<<DragEnter>>', lambda e: root.config(bg=DRAG_HOVER_COLOR))
@@ -726,16 +688,14 @@ select_button.pack(pady=30)
 select_button.bind("<Enter>", lambda e: select_button.config(bg=BUTTON_HOVER_COLOR))
 select_button.bind("<Leave>", lambda e: select_button.config(bg=BUTTON_COLOR_LIGHT))
 
-# Create a frame for the official website label and link
+# Official Website Section
 website_frame = Frame(root)
 website_frame.pack(pady=5)
 
-# Official Website Label
-official_website_label = Label(website_frame, text="Official Website:", font=(FONT, 12, "italic","bold"), fg="black")
+official_website_label = Label(website_frame, text="Official Website:", font=(FONT, 12, "italic", "bold"), fg="black")
 official_website_label.pack(side="left")
 
-# Clickable Website Link
-website_link = Label(website_frame, text="transferx.netlify.app", font=(FONT, 12, "italic","underline"), cursor="hand2")
+website_link = Label(website_frame, text="transferx.netlify.app", font=(FONT, 12, "italic", "underline"), cursor="hand2")
 website_link.pack(side="right")
 
 # Function to open the website
@@ -754,6 +714,7 @@ settings_button.bind("<Leave>", lambda e: settings_button.config(bg=BUTTON_COLOR
 def start_app():
     theme_manager.set_light_theme()
     root.mainloop()
+
 # Main Execution
 if __name__ == '__main__':
     start_app()
