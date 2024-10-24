@@ -1,5 +1,3 @@
-requests
-packaging
 tkinterdnd2
 pyinstaller
 zeroconf

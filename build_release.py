@@ -72,8 +72,6 @@ def main():
     try:
         # Update version in all necessary files
         files_to_update = [
-            "Client/updater.py",
-            "Server/updater.py",
             "Client/client.iss",
             "Server/server.iss"
         ]

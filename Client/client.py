@@ -12,7 +12,6 @@ from tkinter import Frame, ttk, Button, filedialog, messagebox, Label, Entry, St
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 import mdns_connect
-import updater
 from developer_label import create_developer_label
 
 # Constants
@@ -726,9 +725,26 @@ select_button = Button(root, text="Select Files", command=lambda: Thread(target=
 select_button.pack(pady=30)
 select_button.bind("<Enter>", lambda e: select_button.config(bg=BUTTON_HOVER_COLOR))
 select_button.bind("<Leave>", lambda e: select_button.config(bg=BUTTON_COLOR_LIGHT))
-# Updater Label
-updater.update_status_label = Label(root, text=f"version {updater.AppVersion}", font=(FONT, 12,"italic"))
-updater.update_status_label.pack(pady=5)
+
+# Create a frame for the official website label and link
+website_frame = Frame(root)
+website_frame.pack(pady=5)
+
+# Official Website Label
+official_website_label = Label(website_frame, text="Official Website:", font=(FONT, 12, "italic","bold"), fg="black")
+official_website_label.pack(side="left")
+
+# Clickable Website Link
+website_link = Label(website_frame, text="transferx.netlify.app", font=(FONT, 12, "italic","underline"), cursor="hand2")
+website_link.pack(side="right")
+
+# Function to open the website
+def open_website(event):
+    import webbrowser
+    webbrowser.open("https://transferx.netlify.app/")
+
+# Bind the click event to the website link
+website_link.bind("<Button-1>", open_website)
 
 settings_button = Button(root, text="⚙️ Settings", command=open_settings, font=(FONT, 12), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=0, padx=10, pady=5)
 settings_button.place(relx=1.0, rely=0.0, anchor='ne', x=-120)
@@ -740,5 +756,4 @@ def start_app():
     root.mainloop()
 # Main Execution
 if __name__ == '__main__':
-    updater.check_updates_async()
     start_app()

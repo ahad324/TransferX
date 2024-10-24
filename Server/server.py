@@ -5,7 +5,6 @@ import tkinter as tk
 from tkinter import scrolledtext, messagebox, ttk, font, Label, Frame
 
 import mdns_connect
-import updater
 # Determine the user's Downloads folder path
 def get_downloads_folder():
     if sys.platform == "win32":
@@ -579,12 +578,26 @@ from developer_label import create_developer_label
 bottom_frame = Frame(root, bg=DARK_BG_COLOR)
 bottom_frame.pack(side='bottom', fill='x', padx=5, pady=5)
 
-# Version label (left side)
-version_frame = Frame(bottom_frame, bg=DARK_BG_COLOR)
-version_frame.pack(side='left')
+# Create a frame for the version label and website link
+website_frame = Frame(bottom_frame, bg=DARK_BG_COLOR)
+website_frame.pack(side='left')
 
-updater.update_status_label = Label(version_frame, text=f"version {updater.AppVersion}", font=(FONT, 10, "italic"), bg=DARK_BG_COLOR, fg="white")
-updater.update_status_label.pack(side='left', padx=10)
+# Official Website Label
+official_website_label = Label(website_frame, text="Official Website:", font=(FONT, 12, "italic","bold"), bg=DARK_BG_COLOR, fg="white")
+official_website_label.pack(side='left')
+
+# Clickable Website Link
+website_link = Label(website_frame, text="transferx.netlify.app", font=(FONT, 12, "italic","underline"), bg=DARK_BG_COLOR, fg="white", cursor="hand2")
+website_link.pack(side='left')
+
+# Function to open the website
+def open_website(event):
+    import webbrowser
+    webbrowser.open("https://transferx.netlify.app/")
+
+# Bind the click event to the website link
+website_link.bind("<Button-1>", open_website)
+
 
 # Import and use the DeveloperLabel class
 from developer_label import create_developer_label
@@ -596,6 +609,5 @@ developer_label = create_developer_label(
     light_theme={'bg': DARK_BG_COLOR, 'fg': 'white'},
     dark_theme={'bg': DARK_BG_COLOR, 'fg': 'white'}
 )
-updater.check_updates_async()
 # Run the Tkinter main loop
 root.mainloop()
