@@ -167,14 +167,14 @@ def create_zip_progress_dialog(on_cancel):
 
     dialog_size = {"width": 400, "height": 350}
     dialog = Toplevel(root)
-    dialog.title("Compressing Files")
+    dialog.title("Zipping Files")
     dialog.geometry(f"{dialog_size['width']}x{dialog_size['height']}")
     set_window_icon(dialog)
     dialog.transient(root)
     dialog.grab_set()
 
     # Title and Progress Bar
-    Label(dialog, text="Compressing Your Files...", font=(FONT, 16, "bold")).pack(pady=10)
+    Label(dialog, text="Zipping Your Files...", font=(FONT, 16, "bold")).pack(pady=10)
     progress = ttk.Progressbar(dialog, orient="horizontal", mode="determinate", length=350, style='TProgressbar')
     progress.pack(pady=15)
 
@@ -193,8 +193,11 @@ def create_zip_progress_dialog(on_cancel):
     file_size_label.pack()
 
     # Cancel Button
-    cancel_button = Button(dialog, text="Stop Compression", command=on_closing, font=(FONT, 14), bg=BUTTON_COLOR_DARK, fg=WHITE_COLOR, borderwidth=0, padx=20, pady=5)
+    cancel_button = Button(dialog, text="Stop Zipping", command=on_closing, font=(FONT, 14), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=0, padx=20, pady=5)
     cancel_button.pack(pady=20)
+    cancel_button.bind("<Enter>", lambda e: cancel_button.config(bg=BUTTON_HOVER_COLOR))
+    cancel_button.bind("<Leave>", lambda e: cancel_button.config(bg=BUTTON_COLOR_LIGHT))
+
 
     center_window(dialog, dialog_size["width"], dialog_size["height"])
 
@@ -279,7 +282,8 @@ def zip_files(file_paths, zip_file_path, on_complete):
 
         cancel_requested = False
         dialog, progress, file_name_label, file_size_label, files_compressed_label, compression_progress_label = create_zip_progress_dialog(on_cancel)
-
+        ensure_base_dir_exists(BASE_DIR)
+        
         total_files = len(file_paths)
         total_size = sum(os.path.getsize(file) for file in file_paths)
         zipped_files = 0
@@ -326,6 +330,7 @@ def zip_files(file_paths, zip_file_path, on_complete):
                 os.remove(zip_file_path)
                 messagebox.showinfo("Cancelled", "The zipping process was cancelled.")
             else:
+                on_cancel()
                 messagebox.showerror("Error", f"An error occurred: {str(e)}")
             return
 

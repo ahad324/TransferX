@@ -27,5 +27,5 @@ signtool verify /pa /v myapp.exe
 
 
 <=========== For checksum ==============>
-certutil -hashfile .\TransferX-v0.0.6.exe SHA256
-certutil -hashfile .\TransferXServer-v0.0.6.exe SHA256
+certutil -hashfile .\TransferX.exe SHA256
+certutil -hashfile .\TransferXServer.exe SHA256
