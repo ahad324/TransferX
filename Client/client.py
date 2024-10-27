@@ -285,14 +285,13 @@ def zip_files(file_paths, zip_file_path, on_complete):
         zipped_files = 0
         total_zipped_size = 0
         progress['maximum'] = 100
-        chunk_size = 1024 * 1024  # 1MB chunks
+        chunk_size = int(chunk_size_var.get())
 
         try:
             with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED, allowZip64=True) as zipf:
                 for i, file in enumerate(file_paths):
                     if cancel_requested:
                         break
-
                     file_name = os.path.basename(file)
                     file_size = os.path.getsize(file)
                     file_name_label.config(text=f"Currently Processing: {file_name}")
