@@ -8,11 +8,11 @@ venv_site_packages = os.path.join('myenv', 'Lib', 'site-packages')
 iconpath = '../Logo/logo.ico'
 
 a = Analysis(
-    ['client.py','utility.py', 'mdns_connect.py','developer_label.py'],
+    ['client.py','utility.py','updater.py','mdns_connect.py','developer_label.py'],
     pathex=[os.path.dirname(os.path.abspath(__name__))],
     binaries=[],
     datas=collect_data_files('tkinterdnd2') + [(iconpath, 'Logo')],
-    hiddenimports=['tkinterdnd2','zeroconf', 'zeroconf._utils','zeroconf._utils.ipaddress', 'zeroconf._services', 'zeroconf._core', 'zeroconf._engine', 'zeroconf._listener','zeroconf._handlers.answers'],
+    hiddenimports=['tkinterdnd2','requests','packaging','psutil','zeroconf', 'zeroconf._utils','zeroconf._utils.ipaddress', 'zeroconf._services', 'zeroconf._core', 'zeroconf._engine', 'zeroconf._listener','zeroconf._handlers.answers'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -43,4 +43,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=iconpath,
+    onefile=True
 )

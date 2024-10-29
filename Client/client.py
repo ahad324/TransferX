@@ -13,6 +13,7 @@ from tkinter import Frame, ttk, Button, filedialog, messagebox, Label, Entry, St
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 import mdns_connect
+import updater
 from developer_label import create_developer_label
 
 # Constants
@@ -603,11 +604,11 @@ def open_settings():
 
 ensure_base_dir_exists(BASE_DIR)
 
-root_windows_size = {"width": 800, "height": 600}
+root_window_minsize = (800, 600)
 root = TkinterDnD.Tk()
 root.title("TransferX")
-root.geometry(f"{root_windows_size['width']}x{root_windows_size['height']}")
-root.minsize(300, 300)
+root.state('zoomed')
+root.minsize(root_window_minsize[0],root_window_minsize[1])
 set_window_icon(root)
 root.option_add("*Font", font.Font(family=FONT))
 
@@ -640,9 +641,6 @@ server_ip_var = StringVar(value=DEFAULT_SERVER_IP)
 server_port_var = StringVar(value=DEFAULT_SERVER_PORT)
 chunk_size_var = StringVar(value=DEFAULT_CHUNK_SIZE)
 roll_no_var = StringVar()
-
-# Center Window
-root.after(0, center_window(root, root_windows_size["width"], root_windows_size["height"]))
 
 # Style Configuration
 style = ttk.Style()
@@ -692,13 +690,20 @@ select_button.pack(pady=30)
 select_button.bind("<Enter>", lambda e: select_button.config(bg=BUTTON_HOVER_COLOR))
 select_button.bind("<Leave>", lambda e: select_button.config(bg=BUTTON_COLOR_LIGHT))
 
+# version & app update details label
+version_label = Label(root, text=f"version {updater.AppVersion}", font=(FONT, 12, "italic"), fg="black")
+version_label.pack(pady=(5, 10))
+updater.set_version_label(version_label)
+
 # Official Website Section
 website_frame = Frame(root)
 website_frame.pack(pady=5)
 
+# Official Website Label
 official_website_label = Label(website_frame, text="Official Website:", font=(FONT, 12, "italic", "bold"), fg="black")
 official_website_label.pack(side="left")
 
+# Website Link
 website_link = Label(website_frame, text="transferx.netlify.app", font=(FONT, 12, "italic", "underline"), cursor="hand2")
 website_link.pack(side="right")
 
@@ -709,6 +714,7 @@ def open_website(event):
 
 # Bind the click event to the website link
 website_link.bind("<Button-1>", open_website)
+
 
 settings_button = Button(root, text="⚙️ Settings", command=open_settings, font=(FONT, 12), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=0, padx=10, pady=5)
 settings_button.place(relx=1.0, rely=0.0, anchor='ne', x=-120)
@@ -721,4 +727,5 @@ def start_app():
 
 # Main Execution
 if __name__ == '__main__':
+    updater.check_updates_async()
     start_app()

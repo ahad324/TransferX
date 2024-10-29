@@ -7,12 +7,13 @@ import logging
 import json
 import io
 from pathlib import Path
-from utility import get_downloads_folder, ensure_base_dir_exists, sanitize_filename, is_valid_ip, is_valid_port, is_valid_chunk_size, set_window_icon
+from utility import get_downloads_folder, ensure_base_dir_exists, sanitize_filename, center_window, is_valid_ip, is_valid_port, is_valid_chunk_size, set_window_icon
 from threading import Thread, Event
 import tkinter as tk
 from tkinter import scrolledtext, messagebox, ttk, font, Label, Frame
 
 import mdns_connect
+import updater
 
 class TransferXServer:
     # Constants
@@ -89,14 +90,14 @@ class TransferXServer:
         conn.close()
 
     def setup_gui(self):
+        self.root_window_minsize = (900, 650)
         self.root = tk.Tk()
         self.root.title("TransferX Server Panel")
-        self.root.geometry("800x630")
-        self.root.minsize(300, 300)
+        self.root.state('zoomed')
+        self.root.minsize(self.root_window_minsize[0],self.root_window_minsize[1])
         set_window_icon(self.root)
         self.root.configure(bg=self.DARK_COLOR)
         self.root.option_add("*Font", font.Font(family=self.FONT))
-        # Add this style configuration
         style = ttk.Style()
         style.configure("TNotebook.Tab", padding=[20, 10], font=(self.FONT, 12, "bold"))
 
@@ -147,6 +148,17 @@ class TransferXServer:
         # Bind the click event to the website link
         website_link.bind("<Button-1>", self.open_website)
 
+        # Centered Version Label
+        self.version_label = Label(
+            bottom_frame, 
+            text=f"version {updater.AppVersion}",
+            font=(self.FONT, 12, "italic"),
+            bg=self.DARK_COLOR, 
+            fg="white"
+        )
+        self.version_label.pack(side='left', padx=5, pady=5, expand=True)
+        updater.set_version_label(self.version_label)
+
         # Create developer label (right side)
         self.developer_label = create_developer_label(
             bottom_frame,
@@ -154,6 +166,7 @@ class TransferXServer:
             light_theme={'bg': self.DARK_COLOR, 'fg': 'white'},
             dark_theme={'bg': self.DARK_COLOR, 'fg': 'white'}
         )
+        
     def open_website(self, event):
         import webbrowser
         webbrowser.open("https://transferx.netlify.app/")
@@ -556,4 +569,5 @@ class TransferXServer:
 # Run the server
 if __name__ == "__main__":
     server = TransferXServer()
+    updater.check_updates_async()
     tk.mainloop()

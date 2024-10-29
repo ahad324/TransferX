@@ -10,7 +10,7 @@ import sys
 VERSION = "0.0.1"  # Update this for each new release
 CLIENT_NAME = "TransferX"
 SERVER_NAME = "TransferXServer"
-INNO_SETUP_COMPILER = r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"  # Update this path if necessary
+INNO_SETUP_COMPILER = r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 
 def run_command(command):
     try:
@@ -72,6 +72,8 @@ def main():
     try:
         # Update version in all necessary files
         files_to_update = [
+            "Client/updater.py",
+            "Server/updater.py",
             "Client/client.iss",
             "Server/server.iss"
         ]

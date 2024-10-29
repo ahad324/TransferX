@@ -13,6 +13,7 @@ AppPublisher=AbdulAhad
 [Files]
 Source: "dist\TransferXServer.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\Logo\AppIcon.ico"; DestDir: "{app}\Logo"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ".\update_launcher.bat"; DestDir: "{app}"; Flags: ignoreversion;
 
 [Icons]
 Name: "{group}\TransferX Server"; Filename: "{app}\TransferXServer.exe"; IconFilename: "{app}\Logo\AppIcon.ico"

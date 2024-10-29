@@ -12,7 +12,7 @@ from pathlib import Path
 
 GITHUB_API_URL = "https://api.github.com/repos/ahad324/TransferX/releases/latest"
 AppVersion = "0.0.1"
-APP_NAME = "TransferX"
+APP_NAME = "TransferXServer"
 version_label = None
 
 def is_connected():
@@ -81,7 +81,7 @@ def apply_update(update_file):
         try:
             batch_file_path = "update_launcher.bat"
             process = subprocess.Popen([batch_file_path, update_file], shell=True)
-            # Terminate the existing app
+            # Now terminate the existing app
             terminate_existing_app()
             sys.exit()
         except Exception as e:
@@ -97,7 +97,7 @@ def update_app():
     update_info = check_for_updates()
     if update_info:
         set_update_status(f"New version {update_info['tag_name']} found. Downloading update...")
-        update_file = download_update(update_info['assets'][0]['browser_download_url'])
+        update_file = download_update(update_info['assets'][1]['browser_download_url'])
         if update_file:
             apply_update(update_file)
     else:
