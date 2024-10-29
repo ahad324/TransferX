@@ -1,4 +1,4 @@
-from zeroconf import ServiceInfo, Zeroconf, ServiceBrowser
+from zeroconf import ServiceInfo, Zeroconf
 import socket
 import threading
 import logging
@@ -58,24 +58,6 @@ class ServerZeroconf(Zeroconf):
         super().close()
         self.logger_func("🔴 mDNS server stopped.")
 
-class ServiceListener:
-    def __init__(self, logger_func, zeroconf, server_ip):
-        self.logger_func = logger_func
-        self.zeroconf = zeroconf
-        self.server_ip = server_ip
-
-    def add_service(self, zeroconf, type, name):
-        info = zeroconf.get_service_info(type, name)
-        if info:
-            client_ip = socket.inet_ntoa(info.addresses[0])
-            self.logger_func(f"🔍 Discovery from {client_ip}, responded with {self.server_ip}")
-
-    def remove_service(self, zeroconf, type, name):
-        pass
-
-    def update_service(self, zeroconf, type, name):
-        pass
-
 def start_mdns_server(port):
     mdns_logger = setup_mdns_logging()
     ip_address = get_network_ip()
@@ -90,17 +72,14 @@ def start_mdns_server(port):
 
     log_func = lambda msg: (mdns_logger.info(msg), GUI_LOG_CALLBACK(msg)) if GUI_LOG_CALLBACK else mdns_logger.info(msg)
     zeroconf = ServerZeroconf(log_func)
-    listener = ServiceListener(log_func, zeroconf, ip_address)
-    browser = ServiceBrowser(zeroconf, SERVICE_TYPE, listener)
 
     zeroconf.register_service(info)
     log_func(f"✅ mDNS server is running on {ip_address}:{port}")
 
-    return zeroconf, info, browser
+    return zeroconf, info
 
-def stop_mdns_server(zeroconf, info, browser):
+def stop_mdns_server(zeroconf, info):
     if zeroconf and info:
-        browser.cancel()
         zeroconf.unregister_service(info)
         zeroconf.close()
     else:
@@ -114,6 +93,6 @@ def start_mdns_listener(base_dir, log_callback, port):
     return start_mdns_server(port)
 
 # Stop the mDNS server
-def stop_mdns_listener(zeroconf, info, browser):
+def stop_mdns_listener(zeroconf, info):
     stop_event.set()
-    stop_mdns_server(zeroconf, info, browser)
+    stop_mdns_server(zeroconf, info)

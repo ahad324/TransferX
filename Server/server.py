@@ -316,7 +316,7 @@ class TransferXServer:
                 self.logger.info(f"|{'=' * 20 } 📡 Server started on {ip}:{port} {'=' * 20 }|")
                 self.append_log(f"|{'=' * 20 } 📡 Server started on {ip}:{port} {'=' * 20 }|")
                 # Start the mDNS server
-                self.zeroconf, self.mdns_info, self.mdns_browser = mdns_connect.start_mdns_listener(self.base_dir, self.append_mdns_log, port)
+                self.zeroconf, self.mdns_info = mdns_connect.start_mdns_listener(self.base_dir, self.append_mdns_log, port)
 
             except socket.error as e:
                 if e.errno == 10048:  # Address already in use
@@ -375,10 +375,14 @@ class TransferXServer:
         try:
             # Receive header data
             header_data = receive_until_delimiter(self.DELIMITER)
+            
+            if header_data == b'Discovery_Request':
+                return
+                
             if not header_data:
-                self.logger.error("❌ Header data not received. This might be a discovery request.")
-                self.append_log("❌ Header data not received. This might be a discovery request.")
-                client_socket.sendall(b'Header data not received.')  # Send error response
+                self.logger.error("❌ Header data not received.")
+                self.append_log("❌ Header data not received.")
+                client_socket.sendall(b'error')  # Send error response
                 return
 
             # Try to decode header data with different encodings
@@ -465,7 +469,7 @@ class TransferXServer:
             messagebox.showwarning("⚠️ Server not running", "The server is not currently running.")
             return
         # Stop the mDNS server
-        mdns_connect.stop_mdns_listener(self.zeroconf, self.mdns_info, self.mdns_browser)
+        mdns_connect.stop_mdns_listener(self.zeroconf, self.mdns_info)
         self.server_running = False
         self.stop_event.set()
 

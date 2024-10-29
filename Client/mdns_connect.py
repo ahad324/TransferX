@@ -22,7 +22,9 @@ class ServerListener:
 
 def verify_connection(ip, port):
     try:
-        with socket.create_connection((ip, port), timeout=5):
+        with socket.create_connection((ip, port), timeout=5) as sock:
+            message = "Discovery_Request"
+            sock.sendall(message.encode('utf-8'))
             return True
     except (socket.timeout, ConnectionRefusedError):
         return False
