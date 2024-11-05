@@ -180,10 +180,10 @@ def create_zip_progress_dialog(on_cancel):
     progress.pack(pady=15)
 
     # Overall Progress
-    compression_progress_label = Label(dialog, text="Progress: 0%", font=(FONT, 14, "bold"))
-    compression_progress_label.pack(pady=5)
-    files_compressed_label = Label(dialog, text="Files Processed: 0/0", font=(FONT, 14))
-    files_compressed_label.pack(pady=5)
+    zip_progress_label = Label(dialog, text="Progress: 0%", font=(FONT, 14, "bold"))
+    zip_progress_label.pack(pady=5)
+    files_zipped_label = Label(dialog, text="Files Processed: 0/0", font=(FONT, 14))
+    files_zipped_label.pack(pady=5)
     
     # Current File Info
     file_info_frame = Frame(dialog)
@@ -203,7 +203,7 @@ def create_zip_progress_dialog(on_cancel):
     center_window(dialog, dialog_size["width"], dialog_size["height"])
 
     dialog.protocol("WM_DELETE_WINDOW", on_closing)
-    return dialog, progress, file_name_label, file_size_label, files_compressed_label, compression_progress_label
+    return dialog, progress, file_name_label, file_size_label, files_zipped_label, zip_progress_label
 
 def create_settings_dialog():
     dialog_size = {"width":400,"height":300}
@@ -282,7 +282,7 @@ def zip_files(file_paths, zip_file_path, on_complete):
             dialog.destroy()
 
         cancel_requested = False
-        dialog, progress, file_name_label, file_size_label, files_compressed_label, compression_progress_label = create_zip_progress_dialog(on_cancel)
+        dialog, progress, file_name_label, file_size_label, files_zipped_label, zip_progress_label = create_zip_progress_dialog(on_cancel)
         ensure_base_dir_exists(BASE_DIR)
         
         total_files = len(file_paths)
@@ -319,11 +319,11 @@ def zip_files(file_paths, zip_file_path, on_complete):
                                 
                                 overall_progress = (total_zipped_size / total_size) * 100
                                 progress['value'] = overall_progress
-                                compression_progress_label.config(text=f"Progress: {overall_progress:.1f}%")
+                                zip_progress_label.config(text=f"Progress: {overall_progress:.1f}%")
                                 root.update_idletasks()
 
                     zipped_files += 1
-                    files_compressed_label.config(text=f"Files Processed: {zipped_files}/{total_files}")
+                    files_zipped_label.config(text=f"Files Processed: {zipped_files}/{total_files}")
                     root.update_idletasks()
 
         except Exception as e:
@@ -337,7 +337,7 @@ def zip_files(file_paths, zip_file_path, on_complete):
 
         if not cancel_requested:
             dialog.destroy()
-            messagebox.showinfo("Complete", "File compression completed successfully.")
+            messagebox.showinfo("Complete", "File zipping completed successfully.")
             on_complete(zip_file_path)
 
     Thread(target=zip_thread, daemon=True).start()
