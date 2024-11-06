@@ -54,4 +54,4 @@ def discover_server(ip=None, timeout=TIMEOUT, stop_event=None):
         time.sleep(0.1)
     
     zeroconf.close()
-    return {"status": "error", "message": "No server found. Please check your network settings."}
+    return {"status": "error", "message": "No server found. Please check your network settings or ensure that a server is running."}

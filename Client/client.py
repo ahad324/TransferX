@@ -21,7 +21,7 @@ DEFAULT_SERVER_IP = '192.168.1.102'
 DEFAULT_SERVER_PORT = 5000
 DEFAULT_CHUNK_SIZE = 8192
 DELIMITER = "---END-HEADER---"
-FONT = 'Segoe UI'
+FONT = 'Poppins'
 TIMEOUT = 10
 discovery_stop_event = Event()
 
@@ -36,9 +36,18 @@ ENTRY_BG_COLOR = WHITE_COLOR
 ENTRY_FG_COLOR = '#212529'
 PROGRESSBAR_COLOR = '#28A745'
 BUTTON_HOVER_COLOR = '#8b5cf6'
-DRAG_HOVER_COLOR = "#D3E3FF"
+DRAG_HOVER_COLOR = "red"
 ERROR_COLOR = "red"
 SUCCESS_COLOR = "green"
+BUTTON_CONFIG = {
+    'borderwidth': 0,
+    'padx': 10,
+    'pady': 5,
+    'cursor': "hand2",
+    'font': (FONT, 12),
+    'bg': BUTTON_COLOR_LIGHT,
+    'fg': WHITE_COLOR
+}
 
 if getattr(sys, 'frozen', False):
     CURRENT_DIR = Path(sys._MEIPASS)
@@ -74,10 +83,12 @@ class ThemeManager:
         static_status_label.config(fg=WHITE_COLOR)
         roll_no_entry.config(fg=WHITE_COLOR)
         self.developer_label.update_theme('dark')
-        
-        # Ensure bluish elements maintain white text
-        self.update_bluish_elements(WHITE_COLOR)
 
+    def update_bluish_elements(self, text_color):
+        # Update all elements with bluish background to have white text
+        for widget in [theme_button, auto_connect_button, select_button, settings_button]:
+            widget.config(fg=text_color)
+            
     def toggle_theme(self):
         if self.theme == 'light':
             self.set_dark_theme()
@@ -87,10 +98,6 @@ class ThemeManager:
             self.theme = 'light'
         self.root.update_idletasks()
 
-    def update_bluish_elements(self, text_color):
-        # Update all elements with bluish background to have white text
-        for widget in [theme_button, auto_connect_button, select_button, settings_button]:
-            widget.config(fg=text_color)
             
         # Method to update specific frame background
     def update_frame_background(self, frame):
@@ -105,11 +112,12 @@ def create_loading_screen():
     loading_dialog = Toplevel(root)
     loading_dialog.title("Connecting")
     loading_dialog.geometry(f"{dialog_size['width']}x{dialog_size['height']}")
+    loading_dialog.minsize(300,150)
     set_window_icon(loading_dialog)
     loading_dialog.transient(root)
     loading_dialog.grab_set()
 
-    Label(loading_dialog, text="Finding server, please wait...", font=(FONT, 16)).pack(pady=30)
+    Label(loading_dialog, text="Finding server, please wait...", font=(FONT, 16)).pack(pady=20)
     progress = ttk.Progressbar(loading_dialog, orient="horizontal", mode="indeterminate", length=250)
     progress.pack(pady=10)
     progress.start()
@@ -130,7 +138,7 @@ def create_progress_dialog():
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
             dialog.destroy()
             
-    dialog_size = {"width":350,"height":300}
+    dialog_size = {"width":400,"height":300}
     dialog = Toplevel(root)
     dialog.title("Uploading")
     dialog.geometry(f"{dialog_size['width']}x{dialog_size['height']}")
@@ -166,7 +174,7 @@ def create_zip_progress_dialog(on_cancel):
             on_cancel()
             dialog.destroy()
 
-    dialog_size = {"width": 400, "height": 350}
+    dialog_size = {"width": 400, "height": 400}
     dialog = Toplevel(root)
     dialog.title("Zipping Files")
     dialog.geometry(f"{dialog_size['width']}x{dialog_size['height']}")
@@ -194,7 +202,7 @@ def create_zip_progress_dialog(on_cancel):
     file_size_label.pack()
 
     # Cancel Button
-    cancel_button = Button(dialog, text="Stop Zipping", command=on_closing, font=(FONT, 14), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=0, padx=20, pady=5)
+    cancel_button = Button(dialog, text="Stop Zipping", command=on_closing, **BUTTON_CONFIG)
     cancel_button.pack(pady=20)
     cancel_button.bind("<Enter>", lambda e: cancel_button.config(bg=BUTTON_HOVER_COLOR))
     cancel_button.bind("<Leave>", lambda e: cancel_button.config(bg=BUTTON_COLOR_LIGHT))
@@ -206,15 +214,16 @@ def create_zip_progress_dialog(on_cancel):
     return dialog, progress, file_name_label, file_size_label, files_zipped_label, zip_progress_label
 
 def create_settings_dialog():
-    dialog_size = {"width":400,"height":300}
+    dialog_size = {"width":400,"height":400}
     dialog = Toplevel(root)
     dialog.title("Settings")
     dialog.geometry(f"{dialog_size['width']}x{dialog_size['height']}")
-    set_window_icon(dialog)
+    dialog.minsize(400,400)
     dialog.transient(root)
+    set_window_icon(dialog)
     dialog.grab_set()
 
-    def apply_settings():
+    def update_settings():
         try:
             new_ip = ip_entry.get()
             new_port = int(port_entry.get())
@@ -265,10 +274,10 @@ def create_settings_dialog():
     chunk_size_entry.insert(0, chunk_size_var.get())
     chunk_size_entry.pack(pady=5)
 
-    apply_button = Button(dialog, text="Apply", command=apply_settings, font=(FONT, 14), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=2, padx=10, pady=5)
-    apply_button.pack(pady=5)
-    apply_button.bind("<Enter>", lambda e: apply_button.config(bg=BUTTON_HOVER_COLOR))
-    apply_button.bind("<Leave>", lambda e: apply_button.config(bg=BUTTON_COLOR_LIGHT))
+    update_settings_button = Button(dialog, text="Update settings", command=update_settings, **BUTTON_CONFIG)
+    update_settings_button.pack(pady=20)
+    update_settings_button.bind("<Enter>", lambda e: update_settings_button.config(bg=BUTTON_HOVER_COLOR))
+    update_settings_button.bind("<Leave>", lambda e: update_settings_button.config(bg=BUTTON_COLOR_LIGHT))
 
     center_window(dialog, dialog_size["width"], dialog_size["height"])
     return dialog
@@ -337,7 +346,7 @@ def zip_files(file_paths, zip_file_path, on_complete):
 
         if not cancel_requested:
             dialog.destroy()
-            messagebox.showinfo("Complete", "File zipping completed successfully.")
+            messagebox.showinfo("Completed", "File zipping completed successfully.")
             on_complete(zip_file_path)
 
     Thread(target=zip_thread, daemon=True).start()
@@ -570,12 +579,12 @@ def show_file_metadata(file_paths, callback_on_upload):
     button_frame.pack(pady=20)
     theme_manager.update_frame_background(button_frame)
 
-    upload_button = Button(button_frame, text="Upload", command=on_upload, font=(FONT, 14), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=2, padx=10, pady=5)
+    upload_button = Button(button_frame, text="Upload file", command=on_upload, **BUTTON_CONFIG)
     upload_button.pack(side='left', padx=10)
     upload_button.bind("<Enter>", lambda e: upload_button.config(bg=BUTTON_HOVER_COLOR))
     upload_button.bind("<Leave>", lambda e: upload_button.config(bg=BUTTON_COLOR_LIGHT))
 
-    cancel_button = Button(button_frame, text="Cancel", command=on_cancel, font=(FONT, 14), bg=BUTTON_COLOR_DARK, fg=WHITE_COLOR, borderwidth=2, padx=10, pady=5)
+    cancel_button = Button(button_frame, text="Cancel", command=on_cancel, **BUTTON_CONFIG)
     cancel_button.pack(side='right', padx=10)
     cancel_button.bind("<Enter>", lambda e: cancel_button.config(bg=BUTTON_HOVER_COLOR))
     cancel_button.bind("<Leave>", lambda e: cancel_button.config(bg=BUTTON_COLOR_DARK))
@@ -620,7 +629,7 @@ bottom_frame.pack(side='bottom', fill='x', padx=5, pady=5)
 status_left_frame = Frame(bottom_frame)
 status_left_frame.pack(side='left')
 
-static_status_label = Label(status_left_frame, text="Server Connection Status:", font=(FONT, 16, "bold"), fg=BLACK_COLOR, anchor='w')
+static_status_label = Label(status_left_frame, text="Connection Status:", font=(FONT, 16, "bold"), fg=BLACK_COLOR, anchor='w')
 static_status_label.pack(side='left')
 dynamic_status_label = Label(status_left_frame, text="Disconnected", font=(FONT, 16, "bold"), fg=ERROR_COLOR, anchor='w')
 dynamic_status_label.pack(side='left')
@@ -650,7 +659,7 @@ style.configure('TEntry', font=(FONT, 18), padding=10, relief='raised')
 style.configure('TProgressbar', thickness=30, troughcolor='#D3D3D3')
 
 # UI Elements
-theme_button = Button(root, text="🌙", command=theme_manager.toggle_theme, font=(FONT, 12), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=0, padx=10, pady=5)
+theme_button = Button(root, text="🌙", command=theme_manager.toggle_theme, **BUTTON_CONFIG)
 theme_button.place(relx=1, rely=0, anchor='ne')
 theme_button.bind("<Enter>", lambda e: theme_button.config(bg=BUTTON_HOVER_COLOR))
 theme_button.bind("<Leave>", lambda e: theme_button.config(bg=BUTTON_COLOR_LIGHT))
@@ -659,12 +668,7 @@ auto_connect_button = Button(
     root,
     text="Connect to Server",
     command=lambda: Thread(target=auto_connect).start(),
-    font=(FONT, 12),
-    bg=BUTTON_COLOR_LIGHT,
-    fg=WHITE_COLOR,
-    borderwidth=0,
-    padx=10,
-    pady=5
+    **BUTTON_CONFIG
 )
 auto_connect_button.place(relx=0.0, rely=0.0, anchor='nw')
 auto_connect_button.bind("<Enter>", lambda e: auto_connect_button.config(bg=BUTTON_HOVER_COLOR))
@@ -676,7 +680,7 @@ roll_no_entry = Entry(root, textvariable=roll_no_var, width=30, justify='center'
 roll_no_entry.config(highlightcolor='#007BFF', highlightbackground="#BDBDBD", relief="flat")
 roll_no_entry.pack(pady=(5, 10))
 
-instructions = Label(root, text="Drag and drop files here or click 'Select Files' to upload.\nIf multiple files are selected, they will be zipped.", font=(FONT, 18), wraplength=750, justify="center")
+instructions = Label(root, text="Drag & drop files here or click 'Select Files' to upload.\nIf multiple files are selected, they will be zipped.", font=(FONT, 16), wraplength=750, justify="center")
 instructions.pack(pady=20)
 
 # Drag and Drop Configuration
@@ -685,13 +689,13 @@ root.dnd_bind('<<Drop>>', on_drop)
 root.dnd_bind('<<DragEnter>>', lambda e: root.config(bg=DRAG_HOVER_COLOR))
 root.dnd_bind('<<DragLeave>>', lambda e: root.config(bg=BG_COLOR_LIGHT))
 
-select_button = Button(root, text="Select Files", command=lambda: Thread(target=select_files).start(), font=(FONT, 14), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=2, padx=15, pady=10)
-select_button.pack(pady=30)
+select_button = Button(root, text="Select Files", command=lambda: Thread(target=select_files).start(),width=15, bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, cursor="hand2", borderwidth=0, font=(FONT,14))
+select_button.pack(pady=20)
 select_button.bind("<Enter>", lambda e: select_button.config(bg=BUTTON_HOVER_COLOR))
 select_button.bind("<Leave>", lambda e: select_button.config(bg=BUTTON_COLOR_LIGHT))
 
 # version & app update details label
-version_label = Label(root, text=f"version {updater.AppVersion}", font=(FONT, 12, "italic"), fg="black")
+version_label = Label(root, text=f"version {updater.AppVersion}", font=(FONT, 12, "italic"), fg=BLACK_COLOR)
 version_label.pack(pady=(5, 10))
 updater.set_version_label(version_label)
 
@@ -700,7 +704,7 @@ website_frame = Frame(root)
 website_frame.pack(pady=5)
 
 # Official Website Label
-official_website_label = Label(website_frame, text="Official Website:", font=(FONT, 12, "italic", "bold"), fg="black")
+official_website_label = Label(website_frame, text="Official Website:", font=(FONT, 12, "bold"), fg=BLACK_COLOR)
 official_website_label.pack(side="left")
 
 # Website Link
@@ -715,8 +719,7 @@ def open_website(event):
 # Bind the click event to the website link
 website_link.bind("<Button-1>", open_website)
 
-
-settings_button = Button(root, text="⚙️ Settings", command=open_settings, font=(FONT, 12), bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, borderwidth=0, padx=10, pady=5)
+settings_button = Button(root, text="⚙️ Settings", command=open_settings, **BUTTON_CONFIG)
 settings_button.place(relx=1.0, rely=0.0, anchor='ne', x=-120)
 settings_button.bind("<Enter>", lambda e: settings_button.config(bg=BUTTON_HOVER_COLOR))
 settings_button.bind("<Leave>", lambda e: settings_button.config(bg=BUTTON_COLOR_LIGHT))

@@ -21,13 +21,22 @@ class TransferXServer:
     SERVER_PORT = 5000
     CHUNK_SIZE = 8192
     DELIMITER = "---END-HEADER---"
-    FONT = "Segoe UI"
+    FONT = "Poppins"
     DARK_COLOR = '#111827'
     LIGHT_COLOR = '#f9fafb'
+    BUTTON_CONFIG = {
+        'height': 1,
+        'width': 15,
+        'borderwidth': 2,
+        'padx': 10,
+        'pady': 5,
+        'cursor': "hand2",
+        'font': (FONT, 12)
+    }
 
     def __init__(self):
-        self.init_paths()  # Initialize paths first
-        self.setup_logging()  # Then set up logging
+        self.init_paths()
+        self.setup_logging()
         self.init_db()
         self.server_running = False
         self.stop_event = Event()
@@ -128,9 +137,9 @@ class TransferXServer:
         official_website_label = Label(
             website_frame, 
             text="Official Website:", 
-            font=(self.FONT, 12, "italic", "bold"), 
+            font=(self.FONT, 12, "bold"), 
             bg=self.DARK_COLOR, 
-            fg="white"
+            fg=self.LIGHT_COLOR
         )
         official_website_label.pack(side='left')
 
@@ -140,7 +149,7 @@ class TransferXServer:
             text="transferx.netlify.app", 
             font=(self.FONT, 12, "italic", "underline"), 
             bg=self.DARK_COLOR, 
-            fg="white", 
+            fg=self.LIGHT_COLOR, 
             cursor="hand2"
         )
         website_link.pack(side='left')
@@ -154,7 +163,7 @@ class TransferXServer:
             text=f"version {updater.AppVersion}",
             font=(self.FONT, 12, "italic"),
             bg=self.DARK_COLOR, 
-            fg="white"
+            fg=self.LIGHT_COLOR
         )
         self.version_label.pack(side='left', padx=5, pady=5, expand=True)
         updater.set_version_label(self.version_label)
@@ -163,8 +172,8 @@ class TransferXServer:
         self.developer_label = create_developer_label(
             bottom_frame,
             self.FONT,
-            light_theme={'bg': self.DARK_COLOR, 'fg': 'white'},
-            dark_theme={'bg': self.DARK_COLOR, 'fg': 'white'}
+            light_theme={'bg': self.DARK_COLOR, 'fg': self.LIGHT_COLOR},
+            dark_theme={'bg': self.DARK_COLOR, 'fg': self.LIGHT_COLOR}
         )
         
     def open_website(self, event):
@@ -239,8 +248,8 @@ class TransferXServer:
 
         for label_text, text_var, row in entry_widgets:
             self.create_label_entry(settings_frame, label_text, text_var, row)
-
-        apply_button = tk.Button(settings_frame, text="Apply", command=self.apply_settings, height=2, width=10, bg="#4CAF50", fg="white", relief="raised", font=(self.FONT, 10, "bold"))
+        #
+        apply_button = tk.Button(settings_frame, text="Update settings", command=self.apply_settings, bg="#4CAF50",fg=self.LIGHT_COLOR, **self.BUTTON_CONFIG)
         apply_button.grid(row=4, column=0, columnspan=2, padx=20, pady=20, sticky="n")
         return settings_frame
 
@@ -256,16 +265,16 @@ class TransferXServer:
         button_frame.config(bg=self.DARK_COLOR)
         button_frame.pack(pady=20)
 
-        self.start_button = tk.Button(button_frame, text="Start Server", command=self.start_server, height=2, width=10)
+        self.start_button = tk.Button(button_frame, text="Start Server", command=self.start_server,**self.BUTTON_CONFIG)
         self.start_button.pack(side=tk.LEFT, padx=20)
 
-        self.stop_button = tk.Button(button_frame, text="Stop Server", command=self.stop_server, state=tk.DISABLED, height=2, width=10)
+        self.stop_button = tk.Button(button_frame, text="Stop Server", command=self.stop_server, state=tk.DISABLED,**self.BUTTON_CONFIG)
         self.stop_button.pack(side=tk.LEFT, padx=20)
 
-        self.restart_button = tk.Button(button_frame, text="Restart Server", command=self.restart_server, state=tk.DISABLED, height=2, width=12)
+        self.restart_button = tk.Button(button_frame, text="Restart Server", command=self.restart_server, state=tk.DISABLED,**self.BUTTON_CONFIG)
         self.restart_button.pack(side=tk.LEFT, padx=20)
 
-        clear_button = tk.Button(button_frame, text="Clear Logs", command=self.clear_logs, height=2, width=10)
+        clear_button = tk.Button(button_frame, text="Clear Logs", command=self.clear_logs,**self.BUTTON_CONFIG)
         clear_button.pack(side=tk.LEFT, padx=20)
 
     def append_log(self, message):
@@ -560,7 +569,7 @@ class TransferXServer:
             "----------------------------------------------\n"
             "| Parameter   | Value                        |\n"
             "----------------------------------------------\n"
-            f"| IP Address  | {str(ip).ljust(28)}|\n"
+            f"| Server IP   | {str(ip).ljust(28)}|\n"
             f"| Port        | {str(port).ljust(28)}|\n"
             f"| Chunk Size  | {str(chunk_size).ljust(28)}|\n"
             f"| Directory   | {bucket_dir.ljust(28)}|\n"
