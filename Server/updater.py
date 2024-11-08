@@ -91,7 +91,7 @@ def apply_update(update_file):
             
 def update_app():
     if not is_connected():
-        set_update_status(f"No internet connection. version {AppVersion} ")
+        set_update_status(f"version {AppVersion}")
         return
     
     update_info = check_for_updates()

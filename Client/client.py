@@ -35,7 +35,7 @@ BUTTON_COLOR_DARK = '#818cf8'
 ENTRY_BG_COLOR = WHITE_COLOR
 ENTRY_FG_COLOR = '#212529'
 PROGRESSBAR_COLOR = '#28A745'
-BUTTON_HOVER_COLOR = '#8b5cf6'
+BUTTON_HOVER_COLOR = '#7173fd'
 DRAG_HOVER_COLOR = "red"
 ERROR_COLOR = "red"
 SUCCESS_COLOR = "green"
@@ -142,6 +142,7 @@ def create_progress_dialog():
     dialog = Toplevel(root)
     dialog.title("Uploading")
     dialog.geometry(f"{dialog_size['width']}x{dialog_size['height']}")
+    dialog.minsize(400,300)
     set_window_icon(dialog)
     dialog.transient(root)
     dialog.grab_set()
@@ -178,6 +179,7 @@ def create_zip_progress_dialog(on_cancel):
     dialog = Toplevel(root)
     dialog.title("Zipping Files")
     dialog.geometry(f"{dialog_size['width']}x{dialog_size['height']}")
+    dialog.minsize(400,400)
     set_window_icon(dialog)
     dialog.transient(root)
     dialog.grab_set()
@@ -346,7 +348,6 @@ def zip_files(file_paths, zip_file_path, on_complete):
 
         if not cancel_requested:
             dialog.destroy()
-            messagebox.showinfo("Completed", "File zipping completed successfully.")
             on_complete(zip_file_path)
 
     Thread(target=zip_thread, daemon=True).start()
@@ -478,6 +479,9 @@ def start_server_discovery(ip=None):
 def on_discovery_complete(result, loading_dialog):
     if loading_dialog.winfo_exists():
         loading_dialog.destroy()
+    if discovery_stop_event.is_set():
+        # If the discovery was canceled, do not show any message
+        return
     if result['status'] == 'error':
         messagebox.showerror("Error", result['message'])
         update_connection_status("Disconnected", ERROR_COLOR)

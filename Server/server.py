@@ -85,16 +85,17 @@ class TransferXServer:
                             filename TEXT NOT NULL,
                             file_size INTEGER NOT NULL,
                             saved_path TEXT NOT NULL,
-                            received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                          )''')
+                            received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            address TEXT NOT NULL
+                            )''')
         conn.commit()
         conn.close()
 
-    def log_file_to_db(self, filename, file_size, saved_path):
+    def log_file_to_db(self, filename, file_size, saved_path, address):
         conn = sqlite3.connect(self.db_file)
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO files (filename, file_size, saved_path) VALUES (?, ?, ?)",
-                       (filename, file_size, saved_path))
+        cursor.execute("INSERT INTO files (filename, file_size, saved_path, address) VALUES (?, ?, ?, ?)",
+                        (filename, file_size, saved_path, address))
         conn.commit()
         conn.close()
 
@@ -447,7 +448,8 @@ class TransferXServer:
                     self.logger.info(f"✅ File received successfully: {filename}")
                     self.append_log(f"✅ File received successfully: {filename}")
                     self.file_count_var.set(self.file_count_var.get() + 1)
-                    self.log_file_to_db(filename, file_size, file_path)
+                    addr_str = f"{addr[0]}:{addr[1]}"
+                    self.log_file_to_db(filename, file_size, file_path,addr_str)
                     client_socket.sendall(b'ok\n')  # Send success response
                 else:
                     if os.path.exists(file_path):
