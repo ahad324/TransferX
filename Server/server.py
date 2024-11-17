@@ -303,8 +303,7 @@ class TransferXServer:
                 messagebox.showerror("❌ Invalid Configuration", "Please enter a valid IP address and port.")
                 return
 
-            chunk_size = self.chunk_size_var.get()
-            if not is_valid_chunk_size(chunk_size):
+            if not is_valid_chunk_size(self.chunk_size_var.get()):
                 messagebox.showerror("❌ Invalid Configuration", "Please enter a valid chunk size.")
                 return
 
@@ -364,7 +363,7 @@ class TransferXServer:
         def receive_until_delimiter(delimiter):
             data = b''
             while delimiter.encode('utf-8') not in data:
-                chunk = client_socket.recv(self.CHUNK_SIZE)
+                chunk = client_socket.recv(self.chunk_size_var.get())
                 if not chunk:
                     break
                 data += chunk
@@ -423,10 +422,9 @@ class TransferXServer:
                 return
 
             # Ensure the bucket directory exists
-            if not os.path.exists(self.bucket_dir):
-                ensure_base_dir_exists(self.bucket_dir)
+            ensure_base_dir_exists(self.bucket_dir)
 
-            file_path = os.path.join(self.bucket_dir, sanitize_filename(filename))
+            file_path = os.path.join(self.directory_var.get(), sanitize_filename(filename))
             file_path = get_unique_filename(file_path)  # Ensure unique filename
             self.logger.info(f"💾 Saving file to: {file_path}")
             self.append_log(f"💾 Saving file to: {file_path}")
@@ -437,7 +435,7 @@ class TransferXServer:
             try:
                 with open(file_path, 'wb') as f:
                     while bytes_received < file_size:
-                        chunk = client_socket.recv(min(self.CHUNK_SIZE, file_size - bytes_received))
+                        chunk = client_socket.recv(min(self.chunk_size_var.get(), file_size - bytes_received))
                         if not chunk:
                             break
                         f.write(chunk)
@@ -551,12 +549,7 @@ class TransferXServer:
             messagebox.showerror("Invalid Chunk Size", "The chunk size must be a positive integer.")
             return
 
-        self.SERVER_IP = new_ip
-        self.SERVER_PORT = new_port
-        self.CHUNK_SIZE = new_chunk_size
-        self.BUCKET_DIR = new_dir
-
-        ensure_base_dir_exists(self.BUCKET_DIR)
+        ensure_base_dir_exists(new_dir)
 
         messagebox.showinfo("Settings", "Settings updated successfully.")
 
@@ -565,7 +558,7 @@ class TransferXServer:
         if self.server_running:
             self.restart_server()
 
-    def log_settings_summary(self, ip, port, chunk_size, bucket_dir):
+    def log_settings_summary(self, ip, port, chunk_size, _dir):
         settings_table = (
             "⚙️  Settings applied:\n"
             "----------------------------------------------\n"
@@ -574,7 +567,7 @@ class TransferXServer:
             f"| Server IP   | {str(ip).ljust(28)}|\n"
             f"| Port        | {str(port).ljust(28)}|\n"
             f"| Chunk Size  | {str(chunk_size).ljust(28)}|\n"
-            f"| Directory   | {bucket_dir.ljust(28)}|\n"
+            f"| Directory   | {_dir.ljust(28)}|\n"
             "----------------------------------------------\n"
         )
 

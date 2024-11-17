@@ -427,12 +427,13 @@ def submit_file(file_path, roll_no):
                     if total_sent != file_size:
                         raise Exception(f"File size mismatch. Sent {total_sent} bytes, expected {file_size} bytes.")
 
-                    s.settimeout(10)  # Set a 10-second timeout for receiving the response
+                    s.settimeout(TIMEOUT)  # Set a 10-second timeout for receiving the response
                     response = s.recv(1024).decode('utf-8').strip()
                     if response == 'ok':
                         if not cancel_upload:
                             dialog.after(0, dialog.destroy)
                             messagebox.showinfo("Success", "File uploaded successfully!")
+                            os.remove(file_path)
                         return True  # Indicate successful upload
                     else:
                         raise Exception(f"Server response: {response}")
