@@ -10,7 +10,7 @@ from packaging import version
 from utility import get_downloads_folder
 from pathlib import Path
 
-GITHUB_API_URL = "https://api.github.com/repos/ahad324/TransferX/releases/latest"
+GITHUB_API_URL = "https://api.github.com/repos/ahad324/TransferXUpdates/releases/latest"
 AppVersion = "0.0.1"
 APP_NAME = "TransferXServer"
 version_label = None
