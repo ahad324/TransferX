@@ -10,7 +10,6 @@ Welcome to **TransferX**—the ultimate offline file-sharing solution designed t
 - **🔗 Auto-Connect**: Effortlessly connect to available servers with our Auto-Connect feature, eliminating the need for manual IP address entries.
 - **📁 Drag & Drop**: Simplify your file-sharing process by dragging and dropping files directly into the client window.
 - **📊 Real-Time Monitoring**: Stay informed with the mDNS Logs tab, where you can monitor live mDNS connections and server activities.
-- **🛡️ Password Protection**: Protect your application settings with a secure password, keeping your configurations safe from unauthorized access.
 - **🖼️ Customizable Interface**: Enjoy a visually appealing, user-friendly interface, complete with custom icons and a responsive design for an enhanced user experience.
 
 ---
