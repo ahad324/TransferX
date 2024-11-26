@@ -554,10 +554,11 @@ def show_file_metadata(file_paths, callback_on_upload):
 
     metadata = []
     for file in file_paths:
-        name = os.path.basename(file)
+        _, file_extension = os.path.splitext(file)
+        name = f"{roll_no_var.get()}{file_extension}"
         size = os.path.getsize(file)
         formatted_size = format_size(size)
-        metadata.append(f"Name: {name}\nSize: {formatted_size}")
+        metadata.append(f"Name: {name}\nSize: {formatted_size}\n")
 
     metadata_text = "\n\n".join(metadata)
 
@@ -578,10 +579,10 @@ def show_file_metadata(file_paths, callback_on_upload):
     dialog.grab_set()
 
     Label(dialog, text="The following file will be uploaded:", font=(FONT, 16)).pack(pady=10)
-    Label(dialog, text=metadata_text, font=(FONT, 14,"bold"), justify='left').pack(pady=10)
+    Label(dialog, text=metadata_text, font=(FONT, 14,"bold"), justify='left').pack(pady=0)
 
     button_frame = Frame(dialog, bg=BG_COLOR_LIGHT)
-    button_frame.pack(pady=20)
+    button_frame.pack(pady=0)
     theme_manager.update_frame_background(button_frame)
 
     upload_button = Button(button_frame, text="Upload file", command=on_upload, **BUTTON_CONFIG)
