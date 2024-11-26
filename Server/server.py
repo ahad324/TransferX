@@ -17,9 +17,6 @@ import updater
 
 class TransferXServer:
     # Constants
-    SERVER_IP = '0.0.0.0'
-    SERVER_PORT = 5000
-    CHUNK_SIZE = 8192
     DELIMITER = "---END-HEADER---"
     FONT = "Poppins"
     DARK_COLOR = '#111827'
@@ -114,9 +111,11 @@ class TransferXServer:
         self.connection_count_var = tk.IntVar(value=0)
         self.file_count_var = tk.IntVar(value=0)
         self.data_received_var = tk.IntVar(value=0)
-        self.chunk_size_var = tk.IntVar(value=self.CHUNK_SIZE)
-        self.server_ip_var = tk.StringVar(value=self.SERVER_IP)
-        self.server_port_var = tk.IntVar(value=self.SERVER_PORT)
+        self.chunk_size_var = tk.IntVar(value=8192)
+        self.server_ip_var = tk.StringVar(value="0.0.0.0")
+        self.server_port_var = tk.IntVar(value=5000)
+        self.allowed_extensions_var = tk.StringVar(value=".txt,.jpg,.png,.pdf,.zip")
+        self.max_file_size_var = tk.IntVar(value=10)
         self.directory_var = tk.StringVar(value=self.bucket_dir + "/")
 
         self.create_notebook()
@@ -237,28 +236,66 @@ class TransferXServer:
 
     def create_settings_frame(self, notebook):
         settings_frame = tk.Frame(notebook)
-        settings_frame.grid_columnconfigure(0, weight=1)
-        settings_frame.grid_columnconfigure(1, weight=2)
+        settings_frame.grid_columnconfigure(0, weight=1, uniform="settings")
+        settings_frame.grid_columnconfigure(1, weight=2, uniform="settings")
 
+        # Define all input fields in a single list
         entry_widgets = [
             ("Server IP:", self.server_ip_var, 0),
             ("Port:", self.server_port_var, 1),
-            ("Chunk Size:", self.chunk_size_var, 2),
-            ("Storage Directory:", self.directory_var, 3)
+            ("Chunk Size (bytes):", self.chunk_size_var, 2),
+            ("Storage Directory:", self.directory_var, 3),
+            ("Allowed Extensions (comma-separated):", self.allowed_extensions_var, 4),
+            ("Max File Size (MB):", self.max_file_size_var, 5),
         ]
 
+        # Dynamically create labels and entries for settings
         for label_text, text_var, row in entry_widgets:
             self.create_label_entry(settings_frame, label_text, text_var, row)
-        #
-        apply_button = tk.Button(settings_frame, text="Update settings", command=self.apply_settings, bg="#4CAF50",fg=self.LIGHT_COLOR, **self.BUTTON_CONFIG)
-        apply_button.grid(row=4, column=0, columnspan=2, padx=20, pady=20, sticky="n")
+
+        # Add Apply button
+        apply_button = tk.Button(
+            settings_frame,
+            text="Update Settings",
+            command=self.apply_settings,
+            bg="#4CAF50",  # Green background for Apply button
+            fg=self.LIGHT_COLOR,  # White text
+            activebackground="#45a049",  # Slightly darker green on hover
+            activeforeground=self.LIGHT_COLOR,
+            **self.BUTTON_CONFIG,
+        )
+        apply_button.grid(
+            row=len(entry_widgets), column=0, columnspan=2, padx=20, pady=20, sticky="n"
+        )
+
         return settings_frame
 
-    def create_label_entry(self, frame, label_text, text_variable, row, font=(FONT, 12, "bold"), entry_width=30):
-        tk.Label(frame, text=label_text, anchor="e", font=font).grid(row=row, column=0, padx=20, pady=10, sticky="e")
-        entry = tk.Entry(frame, textvariable=text_variable, font=(self.FONT, 12), width=entry_width)
-        entry.config(relief="solid", borderwidth=1)
+    def create_label_entry(self, frame, label_text, text_variable, row, font=None, entry_width=30):
+        if font is None:
+            font = (self.FONT, 12, "bold")
+
+        # Label with consistent styling
+        tk.Label(
+            frame,
+            text=label_text,
+            font=font,
+            anchor="e",
+            fg=self.DARK_COLOR
+        ).grid(row=row, column=0, padx=20, pady=10, sticky="e")
+
+        # Entry with enhanced styling
+        entry = tk.Entry(
+            frame,
+            textvariable=text_variable,
+            font=(self.FONT, 12),
+            width=entry_width,
+            relief="solid",
+            bg="#ffffff",  # White background
+            fg="#000000",  # Black text
+            insertbackground="#000000",  # Black cursor
+        )
         entry.grid(row=row, column=1, padx=20, pady=10, ipady=4, sticky="ew")
+
         return entry
 
     def create_buttons(self):
@@ -378,6 +415,9 @@ class TransferXServer:
                 counter += 1
             return new_file_path
 
+        def get_file_extension(filename):
+            return os.path.splitext(filename)[1].lower()
+        
         def get_file_size(file_path):
             return os.path.getsize(file_path) if os.path.exists(file_path) else 0
 
@@ -420,7 +460,27 @@ class TransferXServer:
                 self.append_log(f"{'❌' * 10} Error processing metadata: {e}")
                 client_socket.sendall(b'Error processing metadata.')  # Send error response
                 return
+            
+            # Validate file type
+            file_extension = get_file_extension(filename)
 
+            # Extract allowed extensions from the StringVar
+            allowed_extensions = {ext.strip().lower() for ext in self.allowed_extensions_var.get().split(",") if ext.strip()}
+
+            if file_extension not in allowed_extensions:
+                self.logger.warning(f"⚠️ Unsupported file type: {file_extension}")
+                self.append_log(f"⚠️ Unsupported file type: {file_extension}")
+                client_socket.sendall(b'error: Unsupported file type.')
+                return
+
+            # Validate file size
+            max_file_size_bytes = int(self.max_file_size_var.get()) * 1024 * 1024  # Convert MB to bytes
+            if file_size > max_file_size_bytes:
+                self.logger.warning(f"⚠️ File size exceeds limit: {file_size} bytes")
+                self.append_log(f"⚠️ File size exceeds limit: {file_size} bytes")
+                client_socket.sendall(b'error: File size exceeds limit.')
+                return
+        
             # Ensure the bucket directory exists
             ensure_base_dir_exists(self.bucket_dir)
 
@@ -532,42 +592,94 @@ class TransferXServer:
         self.append_log(session_table)
 
     def apply_settings(self):
-        new_ip = self.server_ip_var.get()
+        new_ip = self.server_ip_var.get().strip()
         new_port = self.server_port_var.get()
         new_chunk_size = self.chunk_size_var.get()
-        new_dir = self.directory_var.get()
+        new_dir = self.directory_var.get().strip()
+        new_extensions = self.allowed_extensions_var.get().strip()
+        new_max_size = self.max_file_size_var.get()
 
+        # Validate IP address
         if not is_valid_ip(new_ip):
             messagebox.showerror("Invalid IP", "The provided IP address is invalid.")
             return
 
+        # Validate port
         if not is_valid_port(new_port):
             messagebox.showerror("Invalid Port", "The provided port number is invalid. It must be between 0 and 65535.")
             return
 
+        # Validate chunk size
         if not is_valid_chunk_size(new_chunk_size):
             messagebox.showerror("Invalid Chunk Size", "The chunk size must be a positive integer.")
             return
 
+        # Validate directory
+        if not new_dir:
+            messagebox.showerror("Invalid Directory", "The directory field cannot be empty.")
+            return
+        if not os.path.isdir(new_dir):
+            messagebox.showerror("Invalid Directory", "The specified directory does not exist.")
+            return
+
+        # Validate allowed extensions
+        try:
+            allowed_extensions = {ext.strip().lower() for ext in new_extensions.split(",") if ext.strip()}
+            if not allowed_extensions:
+                raise ValueError("No valid extensions provided.")
+        except Exception as e:
+            messagebox.showerror("Invalid Extensions", f"Error processing extensions: {e}")
+            return
+
+        # Validate max file size
+        try:
+            max_file_size_bytes = int(new_max_size) * 1024 * 1024  # Convert MB to bytes
+            if max_file_size_bytes <= 0:
+                raise ValueError("Max file size must be greater than 0.")
+        except Exception as e:
+            messagebox.showerror("Invalid Max Size", f"Error processing max file size: {e}")
+            return
+
+        # Ensure the base directory exists
         ensure_base_dir_exists(new_dir)
 
+        # Notify success
         messagebox.showinfo("Settings", "Settings updated successfully.")
 
-        self.log_settings_summary(new_ip, new_port, new_chunk_size, new_dir)
+        # Log settings summary with processed values
+        self.log_settings_summary(
+            new_ip, 
+            new_port, 
+            new_chunk_size, 
+            new_dir, 
+            new_extensions, 
+            new_max_size  # Convert back to MB for logging
+        )
 
+        # Restart the server if running
         if self.server_running:
             self.restart_server()
 
-    def log_settings_summary(self, ip, port, chunk_size, _dir):
+    def log_settings_summary(self, ip, port, chunk_size, _dir, extensions, max_size):
+        try:
+            # Split and clean extensions
+            cleaned_extensions = [ext.strip().lower() for ext in extensions.split(",") if ext.strip()]
+            extensions_list = ", ".join(cleaned_extensions)
+        except Exception as e:
+            extensions_list = "Invalid extensions"
+            self.logger.error(f"Error processing extensions for logging: {e}")
+        
         settings_table = (
             "⚙️  Settings applied:\n"
             "----------------------------------------------\n"
-            "| Parameter   | Value                        |\n"
+            "| Parameter          | Value                |\n"
             "----------------------------------------------\n"
-            f"| Server IP   | {str(ip).ljust(28)}|\n"
-            f"| Port        | {str(port).ljust(28)}|\n"
-            f"| Chunk Size  | {str(chunk_size).ljust(28)}|\n"
-            f"| Directory   | {_dir.ljust(28)}|\n"
+            f"| Server IP          | {str(ip).ljust(20)} |\n"
+            f"| Port               | {str(port).ljust(20)} |\n"
+            f"| Chunk Size         | {str(chunk_size).ljust(20)} |\n"
+            f"| Directory          | {_dir.ljust(20)} |\n"
+            f"| Allowed Extensions | {extensions_list.ljust(20)} |\n"
+            f"| Max File Size      | {str(max_size).ljust(20)} MB |\n"
             "----------------------------------------------\n"
         )
 

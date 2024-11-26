@@ -354,8 +354,6 @@ def zip_files(file_paths, zip_file_path, on_complete):
 
 def submit_file(file_path, roll_no):
     def start_upload():
-        MAX_RETRIES = 3
-        RETRY_DELAY = 5  # seconds
         cancel_upload = False
 
         dialog, progress, progress_label, speed_label, time_label, sent_label = create_progress_dialog()
@@ -369,91 +367,78 @@ def submit_file(file_path, roll_no):
 
         def upload_file():
             nonlocal cancel_upload
-            for attempt in range(MAX_RETRIES):
-                if cancel_upload:
-                    break
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(30)  # Set a 30-second timeout
+                
+                server_ip = server_ip_var.get()
+                server_port = int(server_port_var.get())
+                
                 try:
-                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.settimeout(30)  # Set a 30-second timeout
-                    
-                    server_ip = server_ip_var.get()
-                    server_port = int(server_port_var.get())
-                    
-                    try:
-                        s.connect((server_ip, server_port))
-                    except (ConnectionRefusedError, OSError) as e:
-                        raise Exception(f"Could not connect to the server at {server_ip}:{server_port}. Error: {e}")
+                    s.connect((server_ip, server_port))
+                except (ConnectionRefusedError, OSError) as e:
+                    raise Exception(f"Could not connect to the server at {server_ip}:{server_port}. Error: {e}")
 
-                    filename = f"{roll_no}.zip" if file_path.endswith('.zip') else f"{roll_no}{os.path.splitext(file_path)[1]}"
-                    file_size = os.path.getsize(file_path)
+                filename = f"{roll_no}.zip" if file_path.endswith('.zip') else f"{roll_no}{os.path.splitext(file_path)[1]}"
+                file_size = os.path.getsize(file_path)
 
-                    metadata = {
-                        "filename": filename,
-                        "file_size": file_size,
-                    }
-                    metadata_json = json.dumps(metadata)
+                metadata = {
+                    "filename": filename,
+                    "file_size": file_size,
+                }
+                metadata_json = json.dumps(metadata)
 
-                    header = f"{metadata_json}\n{DELIMITER}\n"
-                    s.sendall(header.encode('utf-8'))
+                header = f"{metadata_json}\n{DELIMITER}\n"
+                s.sendall(header.encode('utf-8'))
 
-                    # Receive the current size of the file on the server
-                    bytes_sent = int(s.recv(1024).decode('utf-8').strip())
-                    
-                    progress['maximum'] = file_size
-                    progress['value'] = bytes_sent
-                    total_sent = 0
-                    start_time = time.time()
+                # Receive the current size of the file on the server
+                bytes_sent = int(s.recv(1024).decode('utf-8').strip())
+                
+                progress['maximum'] = file_size
+                progress['value'] = bytes_sent
+                total_sent = 0
+                start_time = time.time()
 
-                    chunk_size = int(chunk_size_var.get())
-                    with open(file_path, 'rb') as f:
-                        while True:
-                            if cancel_upload:
-                                raise Exception("Upload canceled by user")
-                            chunk = f.read(chunk_size)
-                            if not chunk:
-                                break
-                            bytes_sent = 0
-                            while bytes_sent < len(chunk):
-                                s.sendall(chunk[bytes_sent:])
-                                bytes_sent += len(chunk)
-                            total_sent += bytes_sent
-                            update_progress(progress, progress_label, speed_label, time_label, sent_label, total_sent, file_size, start_time)
-                            if not dialog.winfo_exists():
-                                raise Exception("Upload canceled by user")
+                chunk_size = int(chunk_size_var.get())
+                with open(file_path, 'rb') as f:
+                    while True:
+                        if cancel_upload:
+                            raise Exception("Upload canceled by user")
+                        chunk = f.read(chunk_size)
+                        if not chunk:
+                            break
+                        bytes_sent = 0
+                        while bytes_sent < len(chunk):
+                            s.sendall(chunk[bytes_sent:])
+                            bytes_sent += len(chunk)
+                        total_sent += bytes_sent
+                        update_progress(progress, progress_label, speed_label, time_label, sent_label, total_sent, file_size, start_time)
+                        if not dialog.winfo_exists():
+                            raise Exception("Upload canceled by user")
 
-                    s.shutdown(socket.SHUT_WR)
+                s.shutdown(socket.SHUT_WR)
+                
+                if total_sent != file_size:
+                    raise Exception(f"File size mismatch. Sent {total_sent} bytes, expected {file_size} bytes.")
 
-                    
-                    if total_sent != file_size:
-                        raise Exception(f"File size mismatch. Sent {total_sent} bytes, expected {file_size} bytes.")
-
-                    s.settimeout(TIMEOUT)  # Set a 10-second timeout for receiving the response
-                    response = s.recv(1024).decode('utf-8').strip()
-                    if response == 'ok':
-                        if not cancel_upload:
-                            dialog.after(0, dialog.destroy)
-                            messagebox.showinfo("Success", "File uploaded successfully!")
+                s.settimeout(TIMEOUT)  # Set a 10-second timeout for receiving the response
+                response = s.recv(1024).decode('utf-8').strip()
+                if response == 'ok':
+                    if not cancel_upload:
+                        dialog.after(0, dialog.destroy)
+                        messagebox.showinfo("Success", "File uploaded successfully!")
+                        if file_path.endswith('.zip'):
                             os.remove(file_path)
-                        return True  # Indicate successful upload
-                    else:
-                        raise Exception(f"Server response: {response}")
+                    return True  # Indicate successful upload
+                else:
+                    raise Exception(f"Server response: {response}")
 
-                except Exception as e:
-                    if cancel_upload:
-                        break
-                    if attempt < MAX_RETRIES - 1 and not cancel_upload:
-                        retry_msg = f"Upload failed. Retrying in {RETRY_DELAY} seconds... (Attempt {attempt + 1}/{MAX_RETRIES})\nError: {str(e)}"
-                        dialog.after(0, lambda: messagebox.showwarning("Retry", retry_msg) if dialog.winfo_exists() else None)
-                        for _ in range(RETRY_DELAY):
-                            if cancel_upload:
-                                break
-                            time.sleep(1)
-                    else:
-                        if not cancel_upload:
-                            error_msg = f"Upload failed after {MAX_RETRIES} attempts. Error: {str(e)}"
-                            dialog.after(0, lambda: messagebox.showerror("Error", error_msg) if dialog.winfo_exists() else None)
-                finally:
-                    s.close()
+            except Exception as e:
+                if not cancel_upload:
+                    error_msg = f"Upload failed. Error: {str(e)}"
+                    dialog.after(0, lambda: messagebox.showerror("Error", error_msg) if dialog.winfo_exists() else None)
+            finally:
+                s.close()
 
             if dialog.winfo_exists():
                 dialog.after(0, dialog.destroy)
