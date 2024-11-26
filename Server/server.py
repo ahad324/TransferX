@@ -618,9 +618,6 @@ class TransferXServer:
         if not new_dir:
             messagebox.showerror("Invalid Directory", "The directory field cannot be empty.")
             return
-        if not os.path.isdir(new_dir):
-            messagebox.showerror("Invalid Directory", "The specified directory does not exist.")
-            return
 
         # Validate allowed extensions
         try:
