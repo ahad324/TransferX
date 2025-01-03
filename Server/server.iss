@@ -1,6 +1,6 @@
 [Setup]
 AppName=TransferX Server
-AppVersion = 0.0.1
+AppVersion = 1.0.0
 DefaultDirName={pf}\TransferX Server
 DefaultGroupName=TransferX Server
 OutputDir=.\App

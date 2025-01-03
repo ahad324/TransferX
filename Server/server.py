@@ -1,13 +1,11 @@
 import socket
 import sqlite3
-import re
 import os
 import sys
 import logging
 import json
-import io
 from pathlib import Path
-from utility import get_downloads_folder, ensure_base_dir_exists, sanitize_filename, center_window, is_valid_ip, is_valid_port, is_valid_chunk_size, set_window_icon
+from utility import get_downloads_folder, ensure_base_dir_exists, sanitize_filename, format_size, is_valid_ip, is_valid_port, is_valid_chunk_size, set_window_icon
 from threading import Thread, Event
 import tkinter as tk
 from tkinter import scrolledtext, messagebox, ttk, font, Label, Frame
@@ -231,6 +229,7 @@ class TransferXServer:
         for i, (text, var) in enumerate(status_labels):
             tk.Label(status_frame, text=text, font=(self.FONT, 12, "bold")).grid(row=i, column=0, padx=20, pady=10)
             tk.Label(status_frame, textvariable=var).grid(row=i, column=1, padx=20, pady=10)
+        
 
         return status_frame
 
@@ -252,7 +251,7 @@ class TransferXServer:
         # Dynamically create labels and entries for settings
         for label_text, text_var, row in entry_widgets:
             self.create_label_entry(settings_frame, label_text, text_var, row)
-
+            
         # Add Apply button
         apply_button = tk.Button(
             settings_frame,
@@ -467,7 +466,8 @@ class TransferXServer:
             # Extract allowed extensions from the StringVar
             allowed_extensions = {ext.strip().lower() for ext in self.allowed_extensions_var.get().split(",") if ext.strip()}
 
-            if file_extension not in allowed_extensions:
+            # Check if "All" is specified to allow all file types
+            if "all" not in allowed_extensions and file_extension not in allowed_extensions:
                 self.logger.warning(f"⚠️ Unsupported file type: {file_extension}")
                 self.append_log(f"⚠️ Unsupported file type: {file_extension}")
                 client_socket.sendall(b'error: Unsupported file type.')
@@ -476,8 +476,8 @@ class TransferXServer:
             # Validate file size
             max_file_size_bytes = int(self.max_file_size_var.get()) * 1024 * 1024  # Convert MB to bytes
             if file_size > max_file_size_bytes:
-                self.logger.warning(f"⚠️ File size exceeds limit: {file_size} bytes")
-                self.append_log(f"⚠️ File size exceeds limit: {file_size} bytes")
+                self.logger.warning(f"⚠️ File size exceeds limit: {format_size(file_size)}")
+                self.append_log(f"⚠️ File size exceeds limit: {format_size(file_size)}")
                 client_socket.sendall(b'error: File size exceeds limit.')
                 return
         
@@ -503,17 +503,17 @@ class TransferXServer:
                         self.data_received_var.set(self.data_received_var.get() + len(chunk))
 
                 if bytes_received == file_size:
-                    self.logger.info(f"✅ File received successfully: {filename}")
-                    self.append_log(f"✅ File received successfully: {filename}")
+                    self.logger.info(f"✅ File received successfully: {filename} ({format_size(file_size)})")
+                    self.append_log(f"✅ File received successfully: {filename} ({format_size(file_size)})")
                     self.file_count_var.set(self.file_count_var.get() + 1)
                     addr_str = f"{addr[0]}:{addr[1]}"
-                    self.log_file_to_db(filename, file_size, file_path,addr_str)
+                    self.log_file_to_db(filename, format_size(file_size), file_path,addr_str)
                     client_socket.sendall(b'ok\n')  # Send success response
                 else:
                     if os.path.exists(file_path):
                         os.remove(file_path)
-                    self.logger.warning(f"⚠️ File transfer incomplete: {filename}. Expected {file_size} bytes, received {bytes_received} bytes.")
-                    self.append_log(f"⚠️ File transfer incomplete: {filename}. Expected {file_size} bytes, received {bytes_received} bytes.")
+                    self.logger.warning(f"⚠️ File transfer incomplete: {filename}. Expected {format_size(file_size)}, received {format_size(file_size)}")
+                    self.append_log(f"⚠️ File transfer incomplete: {filename}. Expected {format_size(file_size)}, received {format_size(file_size)}")
                     client_socket.sendall(b'File transfer incomplete.\n')
             except Exception as e:
                 if os.path.exists(file_path):
@@ -581,9 +581,9 @@ class TransferXServer:
             f"{'=' * 46}\n"
             "| Parameter               | Value         |\n"
             f"{'=' * 46}\n"
-            f"| 📁 Files Processed      | {str(self.file_count_var.get()).ljust(14)}|\n"
-            f"| 🗂 Data Received (bytes) | {str(self.data_received_var.get()).ljust(14)}|\n"
-            f"| 🔄 Chunk Size (bytes)   | {str(self.chunk_size_var.get()).ljust(14)}|\n"
+            f"| 📁 Files Processed     | {str(self.file_count_var.get()).ljust(14)}|\n"
+            f"| 🗂 Data Received        | {format_size(self.data_received_var.get()).ljust(14)}|\n"
+            f"| 🔄 Chunk Size          | {format_size(self.chunk_size_var.get()).ljust(14)}|\n"
             f"{'=' * 46}\n"
             f"🔚 {'=' * 42} 🔚\n"
         )
@@ -673,7 +673,7 @@ class TransferXServer:
             "----------------------------------------------\n"
             f"| Server IP          | {str(ip).ljust(20)} |\n"
             f"| Port               | {str(port).ljust(20)} |\n"
-            f"| Chunk Size         | {str(chunk_size).ljust(20)} |\n"
+            f"| Chunk Size         | {format_size(chunk_size).ljust(20)} |\n"
             f"| Directory          | {_dir.ljust(20)} |\n"
             f"| Allowed Extensions | {extensions_list.ljust(20)} |\n"
             f"| Max File Size      | {str(max_size).ljust(20)} MB |\n"

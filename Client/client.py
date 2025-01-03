@@ -4,8 +4,6 @@ import json
 import time
 import socket
 import zipfile
-import io
-import re
 from pathlib import Path
 from utility import get_downloads_folder, ensure_base_dir_exists, set_window_icon, center_window, sanitize_filename, format_size, is_valid_ip, is_valid_port, is_valid_chunk_size
 from threading import Thread, Event
@@ -355,6 +353,7 @@ def zip_files(file_paths, zip_file_path, on_complete):
 def submit_file(file_path, roll_no):
     def start_upload():
         cancel_upload = False
+        is_temp_zip = file_path.startswith(str(BASE_DIR)) and file_path.endswith('.zip')  # Track if this is our temporary zip
 
         dialog, progress, progress_label, speed_label, time_label, sent_label = create_progress_dialog()
         def on_cancel():
@@ -419,7 +418,7 @@ def submit_file(file_path, roll_no):
                 s.shutdown(socket.SHUT_WR)
                 
                 if total_sent != file_size:
-                    raise Exception(f"File size mismatch. Sent {total_sent} bytes, expected {file_size} bytes.")
+                    raise Exception(f"File size mismatch. Sent {format_size(total_sent)}, expected {format_size(file_size)}.")
 
                 s.settimeout(TIMEOUT)  # Set a 10-second timeout for receiving the response
                 response = s.recv(1024).decode('utf-8').strip()
@@ -427,8 +426,11 @@ def submit_file(file_path, roll_no):
                     if not cancel_upload:
                         dialog.after(0, dialog.destroy)
                         messagebox.showinfo("Success", "File uploaded successfully!")
-                        if file_path.endswith('.zip'):
-                            os.remove(file_path)
+                        if is_temp_zip and os.path.exists(file_path):
+                            try:
+                                os.remove(file_path)
+                            except Exception as e:
+                                messagebox.showerror("Error", "Error removing temporary zip: {e}")
                     return True  # Indicate successful upload
                 else:
                     raise Exception(f"Server response: {response}")

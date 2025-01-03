@@ -2,3 +2,5 @@ tkinterdnd2
 pyinstaller
 zeroconf
 psutil
+requests
+packaging

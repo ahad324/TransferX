@@ -32,6 +32,28 @@ def center_window(window, width, height):
 def sanitize_filename(filename):
     return re.sub(r'[<>:"/\\|?*]', '', filename)
 
+# Function to set the window icon
+def set_window_icon(window):
+    current_dir = sys._MEIPASS if getattr(sys, 'frozen', False) else os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+    logo_path = os.path.join(current_dir, 'Logo', 'logo.ico')
+    window.iconbitmap(logo_path)
+
+# Function to format size
+def format_size(bytes_size):
+    """
+    Format bytes into human readable string with appropriate unit.
+    Automatically chooses between B, KB, MB, GB, TB based on size.
+    """
+    units = ['B', 'KB', 'MB', 'GB', 'TB']
+    size = float(bytes_size)
+    unit_index = 0
+    
+    while size >= 1024 and unit_index < len(units) - 1:
+        size /= 1024
+        unit_index += 1
+    
+    return f"{size:.2f} {units[unit_index]}"
+
 # Function for IP validation
 def is_valid_ip(ip):
     parts = ip.split('.')
@@ -49,9 +71,3 @@ def is_valid_port(port):
 # Function for chunk size validation
 def is_valid_chunk_size(size):
     return size > 0
-
-# Function to set the window icon
-def set_window_icon(window):
-    current_dir = sys._MEIPASS if getattr(sys, 'frozen', False) else os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-    logo_path = os.path.join(current_dir, 'Logo', 'logo.ico')
-    window.iconbitmap(logo_path)

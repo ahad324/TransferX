@@ -1,16 +1,17 @@
-import os
 import subprocess
-import hashlib
-import json
-import shutil
 import re
 import sys
+import os
 
 # Configuration
-VERSION = "0.0.1"  # Update this for each new release
+VERSION = "1.0.0"  # Update this for each new release
 CLIENT_NAME = "TransferX"
 SERVER_NAME = "TransferXServer"
 INNO_SETUP_COMPILER = r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+SIGNTOOL_PATH = r"C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe"  # Update path as needed
+CERTIFICATE_PATH = "TransferX_certificate.pfx"
+CERTIFICATE_PASSWORD = "ahad324xv"
+TIMESTAMP_SERVER = "http://timestamp.digicert.com"
 
 def run_command(command):
     try:
@@ -20,8 +21,8 @@ def run_command(command):
             raise subprocess.CalledProcessError(process.returncode, command, stderr.decode())
         return stdout.decode()
     except subprocess.CalledProcessError as e:
-        print(f"Error executing command: {command}")
-        print(f"Error message: {e.stderr}")
+        print(f"===========> Error executing command: {command}")
+        print(f"===========> Error message: {e.stderr}")
         sys.exit(1)
 
 def build_executable(spec_file, name, dist_dir, build_dir):
@@ -29,8 +30,10 @@ def build_executable(spec_file, name, dist_dir, build_dir):
     run_command(f"pyinstaller {spec_file} --distpath {dist_dir} --workpath {build_dir}")
 
 def create_inno_setup(iss_file, name):
-    print(f"Creating Inno Setup installer for {name}...")
-    output = run_command(f'"{INNO_SETUP_COMPILER}" {iss_file}')
+    """Creating Inno Setup installer with versioned name."""
+    versioned_name = f"{name}_v{VERSION}"
+    print(f"Creating Inno Setup installer for {versioned_name}...")
+    run_command(f'"{INNO_SETUP_COMPILER}" /F"{versioned_name}" {iss_file}')
 
 def update_version_in_files(file_paths):
     for file_path in file_paths:
@@ -64,10 +67,37 @@ def update_version_in_files(file_paths):
             
             print(f"Successfully updated {file_path}")
         except IOError as e:
-            print(f"Error updating file: {file_path}")
-            print(f"Error: {str(e)}")
+            print(f"===========> Error updating file: {file_path}")
+            print(f"===========> Error: {str(e)}")
             sys.exit(1)
 
+def sign_executable(exe_path):
+    """Sign an executable with the specified certificate."""
+    print(f"Signing {exe_path}...")
+    sign_command = (
+        f'"{SIGNTOOL_PATH}" sign '
+        f'/f "{CERTIFICATE_PATH}" '
+        f'/p {CERTIFICATE_PASSWORD} '
+        f'/tr {TIMESTAMP_SERVER} '
+        f'/td SHA256 '
+        f'/fd SHA256 '
+        f'"{exe_path}"'
+    )
+    return run_command(sign_command)
+
+def verify_signature(exe_path):
+    """Verify that an executable is properly signed."""
+    print(f"Verifying signature for {exe_path}...")
+    verify_command = f'"{SIGNTOOL_PATH}" verify /pa /v "{exe_path}"'
+    try:
+        run_command(verify_command)
+        print(f"Signature verification successful for {exe_path}")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"===========> Signature verification failed for {exe_path}")
+        print(f"===========> Error: {e}")
+        return False
+    
 def main():
     try:
         # Update version in all necessary files
@@ -82,13 +112,33 @@ def main():
         build_executable("Client/client.spec", CLIENT_NAME, "Client/dist", "Client/build")
         build_executable("Server/server.spec", SERVER_NAME, "Server/dist", "Server/build")
 
+        # Sign the executables
+        sign_executable(f"Client/dist/{CLIENT_NAME}.exe")
+        sign_executable(f"Server/dist/{SERVER_NAME}.exe")
+        
         # Create Inno Setup installers
         create_inno_setup("Client/client.iss", CLIENT_NAME)
         create_inno_setup("Server/server.iss", SERVER_NAME)
+        
+        # Sign the installers
+        sign_executable(f"Client/App/{CLIENT_NAME}_v{VERSION}.exe")
+        sign_executable(f"Server/App/{SERVER_NAME}_v{VERSION}.exe")
 
-        print("Build process completed successfully!")
+        # Verify signatures
+        executables_to_verify = [
+            f"Client/dist/{CLIENT_NAME}.exe",
+            f"Server/dist/{SERVER_NAME}.exe",
+            f"Client/App/{CLIENT_NAME}_v{VERSION}.exe",
+            f"Server/App/{SERVER_NAME}_v{VERSION}.exe"
+        ]
+
+        for exe in executables_to_verify:
+            if not verify_signature(exe):
+                raise Exception(f"Signature verification failed for {exe}")
+
+        print("Build process completed successfully with all signatures verified!")
     except Exception as e:
-        print(f"Error during build process: {e}")
+        print(f"===========> Error during build process: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

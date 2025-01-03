@@ -37,12 +37,20 @@ def sanitize_filename(filename):
     return re.sub(r'[<>:"/\\|?*]', '', filename)
 
 # Function to format size
-def format_size(size):
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-        if size < 1024.0:
-            return f"{size:.2f} {unit}"
-        size /= 1024.0
-    return f"{size:.2f} PB"
+def format_size(bytes_size):
+    """
+    Format bytes into human readable string with appropriate unit.
+    Automatically chooses between B, KB, MB, GB, TB based on size.
+    """
+    units = ['B', 'KB', 'MB', 'GB', 'TB']
+    size = float(bytes_size)
+    unit_index = 0
+    
+    while size >= 1024 and unit_index < len(units) - 1:
+        size /= 1024
+        unit_index += 1
+    
+    return f"{size:.2f} {units[unit_index]}"
 
 # Validation Functions
 def is_valid_ip(ip):
