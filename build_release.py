@@ -1,21 +1,20 @@
 import subprocess
 import re
 import sys
-import os
 
 # Configuration
 VERSION = "1.0.0"  # Update this for each new release
 CLIENT_NAME = "TransferX"
 SERVER_NAME = "TransferXServer"
 INNO_SETUP_COMPILER = r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-SIGNTOOL_PATH = r"C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe"  # Update path as needed
+SIGNTOOL_PATH = r"C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe"
 CERTIFICATE_PATH = "TransferX_certificate.pfx"
 CERTIFICATE_PASSWORD = "ahad324xv"
 TIMESTAMP_SERVER = "http://timestamp.digicert.com"
 
 def run_command(command):
     try:
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode, command, stderr.decode())
@@ -64,8 +63,6 @@ def update_version_in_files(file_paths):
             
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(content)
-            
-            print(f"Successfully updated {file_path}")
         except IOError as e:
             print(f"===========> Error updating file: {file_path}")
             print(f"===========> Error: {str(e)}")

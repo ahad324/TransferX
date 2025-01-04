@@ -6,7 +6,6 @@ import subprocess
 import threading
 from packaging import version
 from utility import get_downloads_folder
-from pathlib import Path
 
 GITHUB_API_URL = "https://api.github.com/repos/ahad324/TransferXClient/releases/latest"
 AppVersion = "1.0.0"
@@ -83,8 +82,9 @@ def terminate_existing_app():
 def apply_update(update_file):
     if getattr(sys, 'frozen', False):
         try:
+            batch_file_path = "update_launcher.bat"
             # Run the installer silently with the correct extension
-            subprocess.Popen([str(update_file), "/VERYSILENT"], shell=True)
+            subprocess.Popen([batch_file_path, update_file, "/VERYSILENT"], shell=True)
             
             # Terminate the existing app
             terminate_existing_app()
