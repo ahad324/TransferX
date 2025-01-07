@@ -512,8 +512,8 @@ class TransferXServer:
                 else:
                     if os.path.exists(file_path):
                         os.remove(file_path)
-                    self.logger.warning(f"⚠️ File transfer incomplete: {filename}. Expected {format_size(file_size)}, received {format_size(file_size)}")
-                    self.append_log(f"⚠️ File transfer incomplete: {filename}. Expected {format_size(file_size)}, received {format_size(file_size)}")
+                    self.logger.warning(f"⚠️ File transfer incomplete: {filename}. Expected {format_size(file_size)}, received {format_size(bytes_received)}")
+                    self.append_log(f"⚠️ File transfer incomplete: {filename}. Expected {format_size(file_size)}, received {format_size(bytes_received)}")
                     client_socket.sendall(b'File transfer incomplete.\n')
             except Exception as e:
                 if os.path.exists(file_path):
