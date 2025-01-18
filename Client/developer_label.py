@@ -1,4 +1,3 @@
-import webbrowser
 from tkinter import Label, Frame
 import tkinter.font as tkFont
 
@@ -28,6 +27,7 @@ class DeveloperLabel:
         self.update_theme(self.current_theme)
 
     def open_portfolio(self, event):
+        import webbrowser
         webbrowser.open("https://ahad324.github.io/AllProjects/")
 
     def update_theme(self, theme):

@@ -1,9 +1,6 @@
-import socket
 import sqlite3
 import os
 import sys
-import logging
-import json
 from pathlib import Path
 from utility import get_downloads_folder, ensure_base_dir_exists, sanitize_filename, format_size, is_valid_ip, is_valid_port, is_valid_chunk_size, set_window_icon
 from threading import Thread, Event
@@ -35,7 +32,7 @@ class TransferXServer:
         self.init_db()
         self.server_running = False
         self.stop_event = Event()
-        self.connections = []
+        self.connections = set()
         self.setup_gui()
 
     def init_paths(self):
@@ -51,6 +48,7 @@ class TransferXServer:
         self.bucket_dir = os.path.join(self.base_dir, 'bucket_storage')
 
     def setup_logging(self):
+        import logging
         self.logger = logging.getLogger('server')
         self.logger.setLevel(logging.INFO)
 
@@ -331,6 +329,7 @@ class TransferXServer:
             self.root.destroy()
 
     def start_server(self):
+        import socket
         if not self.server_running:
             ip = self.server_ip_var.get()
             port = self.server_port_var.get()
@@ -382,7 +381,7 @@ class TransferXServer:
         while not self.stop_event.is_set():
             try:
                 client_socket, addr = self.server_socket.accept()
-                self.connections.append(client_socket)
+                self.connections.add(client_socket)
                 self.connection_count_var.set(len(self.connections))
                 self.logger.info(f"{'  ' * 5} 🔗 Accepted connection from {addr}")
                 self.append_log(f"{'  ' * 5} 🔗 Accepted connection from {addr}")
@@ -421,6 +420,7 @@ class TransferXServer:
             return os.path.getsize(file_path) if os.path.exists(file_path) else 0
 
         try:
+            import json
             # Receive header data
             header_data = receive_until_delimiter(self.DELIMITER)
             

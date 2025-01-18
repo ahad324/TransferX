@@ -1,18 +1,13 @@
 import os
 import sys
-import json
 import time
-import socket
-import zipfile
 from pathlib import Path
 from utility import get_downloads_folder, ensure_base_dir_exists, set_window_icon, center_window, sanitize_filename, format_size, is_valid_ip, is_valid_port, is_valid_chunk_size
 from threading import Thread, Event
 from tkinter import Frame, ttk, Button, filedialog, messagebox, Label, Entry, StringVar, Toplevel, font
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
-import mdns_connect
 import updater
-from developer_label import create_developer_label
 
 # Constants
 DEFAULT_SERVER_IP = '192.168.1.102'
@@ -28,13 +23,11 @@ WHITE_COLOR = 'white'
 BLACK_COLOR = 'black'
 BG_COLOR_LIGHT = '#f9fafb'
 BG_COLOR_DARK = '#111827'
-BUTTON_COLOR_LIGHT = '#6366f1'
-BUTTON_COLOR_DARK = '#818cf8'
+BUTTON_COLOR_LIGHT = '#5355d6'
 ENTRY_BG_COLOR = WHITE_COLOR
 ENTRY_FG_COLOR = '#212529'
 PROGRESSBAR_COLOR = '#28A745'
-BUTTON_HOVER_COLOR = '#7173fd'
-DRAG_HOVER_COLOR = "red"
+BUTTON_HOVER_COLOR = '#8b5cf6'
 ERROR_COLOR = "red"
 SUCCESS_COLOR = "green"
 BUTTON_CONFIG = {
@@ -74,10 +67,8 @@ class ThemeManager:
 
     def set_dark_theme(self):
         self.root.tk_setPalette(background=BG_COLOR_DARK, foreground=WHITE_COLOR)
-        style.configure('TButton', background=BUTTON_COLOR_DARK, foreground=WHITE_COLOR)
         style.configure('TLabel', background=BG_COLOR_DARK, foreground=WHITE_COLOR)
         style.configure('TEntry', background=ENTRY_BG_COLOR, foreground=ENTRY_FG_COLOR)
-        style.configure('TProgressbar', background=BUTTON_COLOR_DARK, troughcolor='#3C3C3C')
         static_status_label.config(fg=WHITE_COLOR)
         roll_no_entry.config(fg=WHITE_COLOR)
         self.developer_label.update_theme('dark')
@@ -285,6 +276,7 @@ def create_settings_dialog():
 # File Operations
 def zip_files(file_paths, zip_file_path, on_complete):
     def zip_thread():
+        import zipfile
         def on_cancel():
             nonlocal cancel_requested
             cancel_requested = True
@@ -367,6 +359,8 @@ def submit_file(file_path, roll_no):
         def upload_file():
             nonlocal cancel_upload
             try:
+                import socket
+                import json
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.settimeout(30)  # Set a 30-second timeout
                 
@@ -452,13 +446,14 @@ def submit_file(file_path, roll_no):
 
 # Server Discovery and Connection
 def start_server_discovery(ip=None):
+    from mdns_connect import discover_server
     global discovery_stop_event
     discovery_stop_event.clear()  # Reset the event
     try:
         if ip is None:
-            result = mdns_connect.discover_server(timeout=TIMEOUT, stop_event=discovery_stop_event)
+            result = discover_server(timeout=TIMEOUT, stop_event=discovery_stop_event)
         else:
-            result = mdns_connect.discover_server(ip, TIMEOUT, stop_event=discovery_stop_event)
+            result = discover_server(ip, TIMEOUT, stop_event=discovery_stop_event)
         
         return result
     except Exception as e:
@@ -580,7 +575,7 @@ def show_file_metadata(file_paths, callback_on_upload):
     cancel_button = Button(button_frame, text="Cancel", command=on_cancel, **BUTTON_CONFIG)
     cancel_button.pack(side='right', padx=10)
     cancel_button.bind("<Enter>", lambda e: cancel_button.config(bg=BUTTON_HOVER_COLOR))
-    cancel_button.bind("<Leave>", lambda e: cancel_button.config(bg=BUTTON_COLOR_DARK))
+    cancel_button.bind("<Leave>", lambda e: cancel_button.config(bg=BUTTON_COLOR_LIGHT))
 
 
     center_window(dialog, dialog_size["width"], dialog_size["height"])
@@ -627,6 +622,8 @@ static_status_label.pack(side='left')
 dynamic_status_label = Label(status_left_frame, text="Disconnected", font=(FONT, 16, "bold"), fg=ERROR_COLOR, anchor='w')
 dynamic_status_label.pack(side='left')
 
+
+from developer_label import create_developer_label
 # Developer Label
 developer_label = create_developer_label(
     bottom_frame,
@@ -679,8 +676,6 @@ instructions.pack(pady=20)
 # Drag and Drop Configuration
 root.drop_target_register(DND_FILES)
 root.dnd_bind('<<Drop>>', on_drop)
-root.dnd_bind('<<DragEnter>>', lambda e: root.config(bg=DRAG_HOVER_COLOR))
-root.dnd_bind('<<DragLeave>>', lambda e: root.config(bg=BG_COLOR_LIGHT))
 
 select_button = Button(root, text="Select Files", command=lambda: Thread(target=select_files).start(),width=15, bg=BUTTON_COLOR_LIGHT, fg=WHITE_COLOR, cursor="hand2", borderwidth=0, font=(FONT,14))
 select_button.pack(pady=20)
